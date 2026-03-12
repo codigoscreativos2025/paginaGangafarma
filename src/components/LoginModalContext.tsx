@@ -62,9 +62,9 @@ function LoginModal() {
                 if (response?.error) {
                     setError("Credenciales inválidas");
                 } else {
-                    setSuccess("Sesión iniciada correctamente");
                     setTimeout(() => {
                         closeModal();
+                        router.push('/dashboard/admin');
                         router.refresh();
                     }, 1000);
                 }

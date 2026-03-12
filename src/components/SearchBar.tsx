@@ -70,39 +70,52 @@ export default function SearchBar() {
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && query.trim() !== '') {
+                            setShowDropdown(false);
+                            router.push(`/buscar?q=${encodeURIComponent(query)}`);
+                        }
+                    }}
                     onFocus={() => { if (results.length > 0) setShowDropdown(true) }}
                 />
-                <button className="bg-highlight hover:bg-highlight/90 text-white px-8 py-3 rounded-lg font-bold transition-all">
+                <button
+                    onClick={() => {
+                        if (query.trim() !== '') {
+                            setShowDropdown(false);
+                            router.push(`/buscar?q=${encodeURIComponent(query)}`);
+                        }
+                    }}
+                    className="bg-highlight hover:bg-highlight/90 text-white px-8 py-3 rounded-lg font-bold transition-all">
                     Buscar
                 </button>
             </div>
 
-            {/* Resultados Desplegables */}
+            {/* Resultados Desplegables en Formato Carrusel */}
             {showDropdown && (query.length > 0) && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden z-20 max-h-96 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-20 p-2">
                     {loading ? (
-                        <div className="p-4 text-center text-slate-500">Buscando productos...</div>
+                        <div className="p-4 text-center text-slate-500 font-medium">Buscando productos...</div>
                     ) : results.length > 0 ? (
-                        <ul className="divide-y divide-slate-100">
+                        <div className="flex gap-4 overflow-x-auto p-4 snap-x hide-scroll-bar">
                             {results.map((item) => (
-                                <li
+                                <div
                                     key={item.codigo}
                                     onClick={() => router.push(`/producto/${item.codigo}`)}
-                                    className="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex justify-between items-center"
+                                    className="snap-start shrink-0 min-w-[220px] max-w-[240px] flex flex-col justify-between p-5 rounded-2xl bg-white border border-slate-100 hover:border-primary hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group"
                                 >
-                                    <div className="flex flex-col">
-                                        <span className="font-semibold text-primary">{item.ddetallada}</span>
-                                        <span className="text-xs text-slate-500">Cód: {item.codigo} | Existencia: {parseFloat(item.stock_disponible || '0')}</span>
+                                    <div className="flex flex-col mb-4">
+                                        <span className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-primary transition-colors" title={item.ddetallada}>{item.ddetallada}</span>
+                                        <span className="text-[10px] text-slate-400 mt-2 font-bold uppercase tracking-widest bg-slate-50 w-max px-2 py-1 rounded">Cód: {item.codigo}</span>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="font-bold text-highlight">${parseFloat(item.precio_divisa || '0').toFixed(2)} USD</span>
-                                        <span className="text-xs font-medium text-secondary">Bs {parseFloat(item.precio_local || '0').toFixed(2)}</span>
+                                    <div className="flex flex-col items-start mt-auto">
+                                        <span className="font-black text-primary text-xl">${parseFloat(item.precio_divisa || '0').toFixed(2)}</span>
+                                        <span className="text-xs font-semibold text-slate-400">Bs {parseFloat(item.precio_local || '0').toFixed(2)}</span>
                                     </div>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     ) : (
-                        <div className="p-4 text-center text-slate-500">No se encontraron resultados para &quot;{query}&quot;</div>
+                        <div className="p-4 text-center text-slate-500 font-medium">No se encontraron resultados para &quot;{query}&quot;</div>
                     )}
                 </div>
             )}

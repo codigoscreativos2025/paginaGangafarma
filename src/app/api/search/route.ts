@@ -29,6 +29,7 @@ export async function GET(request: Request) {
              LEFT JOIN v_articulo_existencia e ON a.codigoarticulo = e.codigoarticulo
              WHERE ${whereClause}
              GROUP BY a.codigo, a.ddetallada, a.precioventa1, a.pvreferencial1
+             HAVING stock_disponible > 0
              LIMIT 40`,
             queryParams
         );
