@@ -9,15 +9,29 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Falta el término de búsqueda' }, { status: 400 });
     }
 
+    const terms = query.trim().split(/\s+/);
+    if (terms.length === 0) {
+        return NextResponse.json({ results: [] });
+    }
+
     try {
-        const searchTerm = `%${query}%`;
+        const whereClause = terms.map(() => `(a.ddetallada LIKE ? OR a.atributos LIKE ? OR a.codigo LIKE ?)`).join(' AND ');
+        const queryParams = terms.flatMap(term => [`%${term}%`, `%${term}%`, `%${term}%`]);
+
         const [rows] = await db.execute(
-            `SELECT v.*, e.existencia, e.costo, e.tasapublico
-       FROM v_articulo v
-       LEFT JOIN v_articulo_existencia e ON v.id = e.id_art
-       WHERE v.ddetallada LIKE ? OR v.codigo LIKE ?
-       LIMIT 20`,
-            [searchTerm, searchTerm]
+            `SELECT 
+                a.id,
+                a.codigo,
+                a.ddetallada,
+                a.precioventa1 AS precio_local,
+                a.pvreferencial1 AS precio_divisa,
+                COALESCE(SUM(e.existencia), 0) AS stock_disponible
+             FROM v_articulo a
+             LEFT JOIN v_articulo_existencia e ON a.codigoarticulo = e.codigoarticulo
+             WHERE ${whereClause}
+             GROUP BY a.id, a.codigo, a.ddetallada, a.precioventa1, a.pvreferencial1
+             LIMIT 40`,
+            queryParams
         );
 
         return NextResponse.json({ results: rows });

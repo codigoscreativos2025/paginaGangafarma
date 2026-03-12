@@ -45,4 +45,4 @@ ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
 # Ejecutar prisma db push antes de iniciar (crea tablas si no existen en /app/db/dev.db)
-CMD ["/bin/sh", "-c", "npx prisma@5.13.0 db push --skip-generate && node server.js"]
+CMD ["/bin/sh", "-c", "node_modules/.bin/prisma db push --skip-generate && node server.js"]

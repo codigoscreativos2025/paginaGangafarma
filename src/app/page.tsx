@@ -1,6 +1,13 @@
+"use client";
+
 import SearchBar from "@/components/SearchBar";
+import { useCart } from "@/components/CartContext";
+import { useLoginModal } from "@/components/LoginModalContext";
+import Image from "next/image";
 
 export default function Home() {
+  const { openCart, items } = useCart();
+  const { openModal } = useLoginModal();
   return (
     <div className="relative flex min-h-screen flex-col">
       {/* Top Navigation Bar */}
@@ -18,11 +25,16 @@ export default function Home() {
               <a className="text-sm font-semibold text-slate-700 hover:text-highlight transition-colors" href="#">Ofertas</a>
             </nav>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="flex items-center justify-center rounded-lg p-2 hover:bg-primary/10 text-primary">
+          <div className="flex items-center gap-4 relative">
+            <button onClick={openCart} className="relative flex items-center justify-center rounded-lg p-2 hover:bg-primary/10 text-primary">
               <span className="material-symbols-outlined">shopping_cart</span>
+              {items.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                  {items.length}
+                </span>
+              )}
             </button>
-            <button className="flex items-center justify-center rounded-lg p-2 hover:bg-primary/10 text-primary">
+            <button onClick={openModal} className="flex items-center justify-center rounded-lg p-2 hover:bg-primary/10 text-primary">
               <span className="material-symbols-outlined">person</span>
             </button>
           </div>
@@ -51,22 +63,41 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Wellness Categories */}
+        {/* Promotions Carousel Section */}
+        <section className="mb-16">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-slate-900">Ofertas Especiales 🔥</h2>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scroll-bar">
+            {[1, 2, 3].map((promo) => (
+              <div key={promo} className="snap-start min-w-[300px] md:min-w-[400px] bg-gradient-to-r from-red-500/10 to-transparent border border-red-500/20 rounded-2xl p-6 flex flex-col justify-center shrink-0">
+                <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full w-max mb-3">-20% DESCUENTO</span>
+                <h3 className="text-xl font-black text-slate-800">Combo Antigripal Completo</h3>
+                <p className="text-sm text-slate-500 mt-1 mb-4">Todo lo que necesitas para aliviar el resfriado a un súper precio.</p>
+                <button className="text-left font-bold text-primary flex items-center gap-1 group">Ver Oferta <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span></button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Wellness Categories Carousel */}
         <section className="mb-16">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-primary">Categorías de Bienestar</h2>
             <a className="text-highlight font-semibold text-sm flex items-center gap-1 hover:underline" href="#">Ver Todas <span className="material-symbols-outlined text-xs">arrow_forward</span></a>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scroll-bar">
             {[
               { icon: 'pill', name: 'Farmacia' },
               { icon: 'fitness_center', name: 'Bienestar' },
               { icon: 'face_5', name: 'Belleza' },
               { icon: 'baby_changing_station', name: 'Cuidado Bebé' },
               { icon: 'spa', name: 'Natural' },
-              { icon: 'vaccines', name: 'Especialidades' }
+              { icon: 'vaccines', name: 'Especialidades' },
+              { icon: 'favorite', name: 'Vitaminas' },
+              { icon: 'healing', name: 'Primeros Auxilios' }
             ].map((cat, i) => (
-              <div key={i} className="flex flex-col items-center gap-3 p-6 rounded-xl bg-white border border-slate-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group">
+              <div key={i} className="snap-start shrink-0 min-w-[120px] md:min-w-[150px] flex flex-col items-center gap-3 p-6 rounded-xl bg-white border border-slate-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group">
                 <div className="w-14 h-14 rounded-full bg-light flex items-center justify-center group-hover:bg-primary group-hover:text-white text-primary transition-colors">
                   <span className="material-symbols-outlined">{cat.icon}</span>
                 </div>

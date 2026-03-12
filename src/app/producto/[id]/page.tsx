@@ -3,14 +3,16 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useCart } from '@/components/CartContext';
+import { useLoginModal } from '@/components/LoginModalContext';
 
 type Product = {
     id: number;
     codigo: string;
     ddetallada: string;
-    existencia: string;
-    costo: string;
-    tasapublico: string;
+    stock_disponible: string;
+    precio_local: string;
+    precio_divisa: string;
     fv: string;
     override?: {
         description?: string;
@@ -24,12 +26,26 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const { openCart, items, addToCart } = useCart();
+    const { openModal } = useLoginModal();
+    const [adding, setAdding] = useState(false);
+
     useEffect(() => {
         fetch(`/api/product?id=${params.id}`)
             .then(res => res.json())
             .then(data => {
-                setProduct(data.product);
+                const prod = data.product;
+                setProduct(prod);
                 setLoading(false);
+
+                // Log view analytics
+                if (prod) {
+                    fetch('/api/track', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ codigo: prod.codigo, actionType: 'VIEW' })
+                    }).catch(console.error);
+                }
             })
             .catch(err => {
                 console.error(err);
@@ -45,9 +61,9 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         return <div className="min-h-screen flex items-center justify-center">Producto no encontrado</div>;
     }
 
-    const stock = parseFloat(product.existencia || '0');
-    const priceUSD = parseFloat(product.costo || '0');
-    const tasa = parseFloat(product.tasapublico || '1');
+    const stock = parseFloat(product.stock_disponible || '0');
+    const priceUSD = parseFloat(product.precio_divisa || '0');
+    const priceLocal = parseFloat(product.precio_local || '0');
     const customImg = product.override?.imageUrl || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3';
 
     return (
@@ -69,13 +85,18 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                     </div>
                 </div>
                 <div className="flex flex-1 justify-end gap-4 md:gap-8">
-                    <div className="flex gap-2">
-                        <button className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                    <div className="flex gap-2 relative">
+                        <button onClick={openCart} className="relative flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-all">
                             <span className="material-symbols-outlined">shopping_cart</span>
+                            {items.length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                                    {items.length}
+                                </span>
+                            )}
                         </button>
-                        <Link href="/login" className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                        <button onClick={openModal} className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-all">
                             <span className="material-symbols-outlined">person</span>
-                        </Link>
+                        </button>
                     </div>
                 </div>
             </header>
@@ -114,15 +135,31 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
                             <div className="flex flex-wrap gap-4 p-4 bg-white rounded-xl border border-primary/10 shadow-sm">
                                 <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                                    <p className="text-slate-500 text-xs font-medium uppercase">Precio (Bs.)</p>
-                                    <p className="text-slate-900 tracking-tight text-2xl font-black">Bs. {(priceUSD * tasa).toFixed(2)}</p>
-                                </div>
-                                <div className="w-px bg-primary/10 h-10 self-center"></div>
-                                <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                                    <p className="text-slate-500 text-xs font-medium uppercase">Referencia</p>
-                                    <p className="text-primary tracking-tight text-2xl font-black">${priceUSD.toFixed(2)}</p>
+                                    <p className="text-slate-500 text-xs font-medium uppercase">Precio (Ref)</p>
+                                    <p className="text-primary tracking-tight text-3xl font-black">${priceUSD.toFixed(2)}</p>
                                 </div>
                             </div>
+
+                            <button
+                                onClick={async () => {
+                                    setAdding(true);
+                                    await addToCart({
+                                        codigo: product.codigo,
+                                        ddetallada: product.ddetallada,
+                                        price: priceUSD,
+                                        quantity: 1,
+                                        image: customImg
+                                    });
+                                    setAdding(false);
+                                }}
+                                disabled={stock <= 0 || adding}
+                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                            >
+                                <span className={adding ? "material-symbols-outlined animate-spin" : "material-symbols-outlined"}>
+                                    {adding ? "refresh" : "add_shopping_cart"}
+                                </span>
+                                {adding ? "Añadiendo..." : "Añadir al Carrito"}
+                            </button>
                         </div>
                     </div>
 

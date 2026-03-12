@@ -12,10 +12,21 @@ export async function GET(request: Request) {
 
     try {
         const [result] = await db.execute(
-            `SELECT v.*, e.existencia, e.costo, e.tasapublico, e.fv
-       FROM v_articulo v
-       LEFT JOIN v_articulo_existencia e ON v.id = e.id_art
-       WHERE v.id = ? LIMIT 1`,
+            `SELECT 
+                a.id,
+                a.codigo,
+                a.codigoarticulo,
+                a.ddetallada,
+                a.atributos,
+                a.tproducto,
+                a.fv,
+                a.precioventa1 AS precio_local,
+                a.pvreferencial1 AS precio_divisa,
+                COALESCE(SUM(e.existencia), 0) AS stock_disponible
+             FROM v_articulo a
+             LEFT JOIN v_articulo_existencia e ON a.codigoarticulo = e.codigoarticulo
+             WHERE a.id = ?
+             GROUP BY a.id, a.codigo, a.codigoarticulo, a.ddetallada, a.atributos, a.tproducto, a.fv, a.precioventa1, a.pvreferencial1`,
             [id]
         );
 

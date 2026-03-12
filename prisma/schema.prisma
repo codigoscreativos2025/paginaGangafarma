@@ -27,3 +27,31 @@ model ProductOverride {
   imageUrl      String?
   updatedAt     DateTime  @updatedAt
 }
+
+model CartItem {
+  id            String    @id @default(cuid())
+  userId        String?
+  guestId       String?
+  codigo        String
+  quantity      Int       @default(1)
+  addedAt       DateTime  @default(now())
+}
+
+model UserActionLog {
+  id            String    @id @default(cuid())
+  userId        String?
+  guestId       String?
+  actionType    String    // 'VIEW', 'ADD_TO_CART'
+  codigo        String
+  timestamp     DateTime  @default(now())
+}
+
+model Promotion {
+  id            String    @id @default(cuid())
+  codigo        String
+  title         String?
+  description   String?
+  discount      Float?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}

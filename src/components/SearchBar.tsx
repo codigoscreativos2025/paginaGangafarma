@@ -8,9 +8,9 @@ type Product = {
     id: number;
     codigo: string;
     ddetallada: string;
-    existencia: string;
-    costo: string;
-    tasapublico: string;
+    stock_disponible: string;
+    precio_local: string;
+    precio_divisa: string;
 };
 
 export default function SearchBar() {
@@ -93,11 +93,11 @@ export default function SearchBar() {
                                 >
                                     <div className="flex flex-col">
                                         <span className="font-semibold text-primary">{item.ddetallada}</span>
-                                        <span className="text-xs text-slate-500">Cód: {item.codigo} | Existencia: {parseFloat(item.existencia || '0')}</span>
+                                        <span className="text-xs text-slate-500">Cód: {item.codigo} | Existencia: {parseFloat(item.stock_disponible || '0')}</span>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="font-bold text-highlight">${parseFloat(item.costo || '0').toFixed(2)} USD</span>
-                                        <span className="text-xs font-medium text-secondary">Bs {(parseFloat(item.costo || '0') * parseFloat(item.tasapublico || '1')).toFixed(2)}</span>
+                                        <span className="font-bold text-highlight">${parseFloat(item.precio_divisa || '0').toFixed(2)} USD</span>
+                                        <span className="text-xs font-medium text-secondary">Bs {parseFloat(item.precio_local || '0').toFixed(2)}</span>
                                     </div>
                                 </li>
                             ))}
