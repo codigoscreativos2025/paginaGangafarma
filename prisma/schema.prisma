@@ -1,0 +1,29 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  role          String    @default("USER")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model ProductOverride {
+  id            String    @id @default(cuid())
+  codigo        String    @unique
+  description   String?
+  howToUse      String?
+  warnings      String?
+  imageUrl      String?
+  updatedAt     DateTime  @updatedAt
+}
