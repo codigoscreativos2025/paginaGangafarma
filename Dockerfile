@@ -21,7 +21,7 @@ RUN npm run build
 # Stage 3: Producción
 FROM base AS runner
 WORKDIR /app
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -41,8 +41,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_module
 
 USER nextjs
 EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # Ejecutar prisma db push antes de iniciar (crea tablas si no existen en /app/db/dev.db)
-CMD ["/bin/sh", "-c", "node_modules/.bin/prisma db push --skip-generate && node server.js"]
+CMD ["/bin/sh", "-c", "node node_modules/prisma/build/index.js db push --accept-data-loss && node server.js"]
