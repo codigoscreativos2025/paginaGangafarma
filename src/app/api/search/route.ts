@@ -20,7 +20,6 @@ export async function GET(request: Request) {
 
         const [rows] = await db.execute(
             `SELECT 
-                a.id,
                 a.codigo,
                 a.ddetallada,
                 a.precioventa1 AS precio_local,
@@ -29,7 +28,7 @@ export async function GET(request: Request) {
              FROM v_articulo a
              LEFT JOIN v_articulo_existencia e ON a.codigoarticulo = e.codigoarticulo
              WHERE ${whereClause}
-             GROUP BY a.id, a.codigo, a.ddetallada, a.precioventa1, a.pvreferencial1
+             GROUP BY a.codigo, a.ddetallada, a.precioventa1, a.pvreferencial1
              LIMIT 40`,
             queryParams
         );

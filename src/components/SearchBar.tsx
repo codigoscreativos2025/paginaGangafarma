@@ -5,7 +5,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Product = {
-    id: number;
     codigo: string;
     ddetallada: string;
     stock_disponible: string;
@@ -87,8 +86,8 @@ export default function SearchBar() {
                         <ul className="divide-y divide-slate-100">
                             {results.map((item) => (
                                 <li
-                                    key={item.id}
-                                    onClick={() => router.push(`/producto/${item.id}`)}
+                                    key={item.codigo}
+                                    onClick={() => router.push(`/producto/${item.codigo}`)}
                                     className="p-4 hover:bg-slate-50 cursor-pointer transition-colors flex justify-between items-center"
                                 >
                                     <div className="flex flex-col">

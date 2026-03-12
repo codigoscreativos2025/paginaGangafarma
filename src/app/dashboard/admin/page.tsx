@@ -78,9 +78,9 @@ export default function AdminDashboard() {
 
             if (data.results && data.results.length > 0) {
                 // Encontramos el primero
-                const id = data.results[0].id;
+                const identifier = data.results[0].codigo;
                 // Pedimos los datos completos (que incluyen el Override)
-                const fullRes = await fetch(`/api/product?id=${id}`);
+                const fullRes = await fetch(`/api/product?id=${identifier}`);
                 const fullData = await fullRes.json();
 
                 if (fullData.product) {
