@@ -16,6 +16,25 @@ type ProductDetail = {
     }
 };
 
+type AnalyticsLogInfo = {
+    id: string;
+    actionType: string;
+    codigo: string;
+    ddetallada: string;
+    timestamp: Date;
+    userType: string;
+};
+
+type UserInfoRow = {
+    id: string;
+    name: string | null;
+    email: string | null;
+    role: string;
+    cartItemCount: number;
+    actionCount: number;
+    createdAt: Date;
+};
+
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
 
@@ -23,10 +42,10 @@ export default function AdminDashboard() {
     const [codigo, setCodigo] = useState('');
     const [productData, setProductData] = useState<ProductDetail | null>(null);
 
-    const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+    const [analyticsData, setAnalyticsData] = useState<AnalyticsLogInfo[]>([]);
     const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
-    const [usersData, setUsersData] = useState<any[]>([]);
+    const [usersData, setUsersData] = useState<UserInfoRow[]>([]);
     const [loadingUsers, setLoadingUsers] = useState(false);
 
     const [desc, setDesc] = useState('');
@@ -300,7 +319,7 @@ export default function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {analyticsData.map((log: any) => (
+                                            {analyticsData.map((log) => (
                                                 <tr key={log.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                                     <td className="p-4">
                                                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${log.actionType === 'ADD_TO_CART' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -365,7 +384,7 @@ export default function AdminDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {usersData.map((user: any) => (
+                                                {usersData.map((user) => (
                                                     <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                                         <td className="p-4">
                                                             <div className="flex items-center gap-3">

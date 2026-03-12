@@ -63,7 +63,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
 
     const stock = parseFloat(product.stock_disponible || '0');
     const priceUSD = parseFloat(product.precio_divisa || '0');
-    const priceLocal = parseFloat(product.precio_local || '0');
     const customImg = product.override?.imageUrl || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3';
 
     return (

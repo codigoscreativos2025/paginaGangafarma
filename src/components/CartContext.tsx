@@ -36,7 +36,7 @@ export function useCart() {
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItemType[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const { openModal } = useLoginModal();
 
     useEffect(() => {

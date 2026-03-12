@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '../../../../auth';
 import prisma from '@/lib/prisma';
 import { db } from '@/lib/db';
+import { RowDataPacket } from 'mysql2/promise';
 
-export async function GET(request: Request) {
+export async function GET() {
     const session = await auth();
     if (!session?.user?.email) {
         return NextResponse.json({ items: [] });
@@ -22,8 +23,8 @@ export async function GET(request: Request) {
         }
 
         // Fetch detailed info for each cart item from the external DB
-        const codigos = cartItems.map((i: any) => `'${i.codigo}'`).join(',');
-        const [rows]: any = await db.execute(
+        const codigos = cartItems.map((i: { codigo: string }) => `'${i.codigo}'`).join(',');
+        const [rows] = await db.execute<RowDataPacket[]>(
             `SELECT a.codigoarticulo, a.ddetallada, a.pvreferencial1 as precio_divisa
              FROM v_articulo a
              WHERE a.codigoarticulo IN (${codigos})
@@ -32,26 +33,26 @@ export async function GET(request: Request) {
 
         // Match with local overrides for images
         const overrides = await prisma.productOverride.findMany({
-            where: { codigo: { in: cartItems.map((i: any) => i.codigo) } }
+            where: { codigo: { in: cartItems.map((i: { codigo: string }) => i.codigo) } }
         });
 
-        const detailedItems = cartItems.map((item: any) => {
-            const dbInfo = (rows as any[]).find((r: any) => r.codigoarticulo == item.codigo);
-            const override = overrides.find((o: any) => o.codigo === item.codigo);
+        const detailedItems = cartItems.map((item: { codigo: string, quantity: number, id: string }) => {
+            const dbInfo = (rows as { codigoarticulo: string, ddetallada: string, precio_divisa: number }[]).find((r) => r.codigoarticulo == item.codigo);
+            const override = overrides.find((o: { codigo: string }) => o.codigo === item.codigo);
 
             return {
                 id: item.id,
                 codigo: item.codigo,
                 quantity: item.quantity,
                 ddetallada: dbInfo?.ddetallada || 'Producto desconocido',
-                price: parseFloat(dbInfo?.precio_divisa || '0'),
+                price: parseFloat(String(dbInfo?.precio_divisa || '0')),
                 image: override?.imageUrl || null
             };
         });
 
         return NextResponse.json({ items: detailedItems });
-    } catch (e) {
-        console.error(e);
+    } catch {
+        // console.error(e);
         return NextResponse.json({ error: 'Error interno' }, { status: 500 });
     }
 }
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
         });
 
         return NextResponse.json({ success: true, item });
-    } catch (e) {
+    } catch {
         return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
     }
 }
@@ -117,7 +118,7 @@ export async function PUT(request: Request) {
         });
 
         return NextResponse.json({ success: true, item });
-    } catch (e) {
+    } catch {
         return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
     }
 }
@@ -144,7 +145,7 @@ export async function DELETE(request: Request) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (e) {
+    } catch {
         return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
     }
 }

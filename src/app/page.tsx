@@ -3,7 +3,6 @@
 import SearchBar from "@/components/SearchBar";
 import { useCart } from "@/components/CartContext";
 import { useLoginModal } from "@/components/LoginModalContext";
-import Image from "next/image";
 
 export default function Home() {
   const { openCart, items } = useCart();

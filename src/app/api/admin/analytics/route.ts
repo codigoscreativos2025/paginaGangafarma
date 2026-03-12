@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { auth } from '../../../../../auth';
 import prisma from '@/lib/prisma';
 import { db } from '@/lib/db';
+import { RowDataPacket } from 'mysql2/promise';
 
-export async function GET(request: Request) {
+export async function GET() {
     const session = await auth();
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session || (session.user as { role?: string })?.role !== 'ADMIN') {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -16,16 +17,16 @@ export async function GET(request: Request) {
         });
 
         // Fetch action info
-        const codigosUnicos = Array.from(new Set(logs.map((l: any) => `'${l.codigo}'`)));
-        let productsMap: Record<string, string> = {};
+        const codigosUnicos = Array.from(new Set(logs.map((l: { codigo: string }) => `'${l.codigo}'`)));
+        const productsMap: Record<string, string> = {};
 
         if (codigosUnicos.length > 0) {
             const codigosUnidos = codigosUnicos.join(',');
-            const [rows]: any = await db.execute(`SELECT codigoarticulo, ddetallada FROM v_articulo WHERE codigoarticulo IN (${codigosUnidos})`);
-            rows.forEach((r: any) => { productsMap[r.codigoarticulo] = r.ddetallada; });
+            const [rows] = await db.execute<RowDataPacket[]>(`SELECT codigoarticulo, ddetallada FROM v_articulo WHERE codigoarticulo IN (${codigosUnidos})`);
+            (rows as { codigoarticulo: string, ddetallada: string }[]).forEach((r) => { productsMap[r.codigoarticulo] = r.ddetallada; });
         }
 
-        const enrichedLogs = logs.map(l => ({
+        const enrichedLogs = logs.map((l: { id: string, actionType: string, codigo: string, timestamp: Date, userId: string | null }) => ({
             id: l.id,
             actionType: l.actionType,
             codigo: l.codigo,

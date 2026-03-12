@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '../../../../../auth';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: Request) {
+export async function GET() {
     const session = await auth();
-    if (!session || (session.user as any)?.role !== 'ADMIN') {
+    if (!session || (session.user as { role?: string })?.role !== 'ADMIN') {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -19,10 +19,9 @@ export async function GET(request: Request) {
             }
         });
 
-        const formattedUsers = users.map((user: any) => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
+        const formattedUsers = users.map((user: {
+            id: string, name: string | null, email: string | null, role: string, createdAt: Date, cartItems: { id: string }[], actionLogs: { id: string }[]
+        }) => ({
             role: user.role,
             createdAt: user.createdAt,
             cartItemCount: user.cartItems.length,
