@@ -13,7 +13,6 @@ type Product = {
     stock_disponible: string;
     precio_local: string;
     precio_divisa: string;
-    fv: string;
     override?: {
         description?: string;
         howToUse?: string;
@@ -129,7 +128,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                                 <span className={`${stock > 0 ? 'text-primary' : 'text-red-500'} font-bold text-sm`}>
                                     {stock > 0 ? `En Stock (${stock} disp.)` : 'Sin Existencia'}
                                 </span>
-                                {product.fv && <span className="text-xs text-slate-500 ml-2">Vence: {new Date(product.fv).toLocaleDateString()}</span>}
                             </div>
 
                             <div className="flex flex-wrap gap-4 p-4 bg-white rounded-xl border border-primary/10 shadow-sm">

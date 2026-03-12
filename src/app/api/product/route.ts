@@ -18,14 +18,13 @@ export async function GET(request: Request) {
                 a.ddetallada,
                 a.atributos,
                 a.tproducto,
-                a.fv,
                 a.precioventa1 AS precio_local,
                 a.pvreferencial1 AS precio_divisa,
                 COALESCE(SUM(e.existencia), 0) AS stock_disponible
              FROM v_articulo a
              LEFT JOIN v_articulo_existencia e ON a.codigoarticulo = e.codigoarticulo
              WHERE a.codigo = ?
-             GROUP BY a.codigo, a.codigoarticulo, a.ddetallada, a.atributos, a.tproducto, a.fv, a.precioventa1, a.pvreferencial1`,
+             GROUP BY a.codigo, a.codigoarticulo, a.ddetallada, a.atributos, a.tproducto, a.precioventa1, a.pvreferencial1`,
             [id]
         );
 
