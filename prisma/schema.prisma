@@ -11,7 +11,7 @@ generator client {
 model User {
   id            String    @id @default(cuid())
   name          String?
-  cedula        String    @unique
+  cedula        String?   @unique
   telefono      String?
   role          String    @default("USER")
   createdAt     DateTime  @default(now())

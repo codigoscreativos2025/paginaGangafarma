@@ -34,6 +34,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 const cedula = String(credentials.cedula).trim();
                 const telefono = String(credentials.telefono).trim();
 
+                if (!cedula || cedula.length < 5) {
+                    console.log('Cédula inválida');
+                    return null;
+                }
+
                 const user = await prisma.user.findUnique({
                     where: { cedula }
                 });
@@ -50,8 +55,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 return {
                     id: String(user.id),
-                    name: user.name,
-                    cedula: user.cedula,
+                    name: user.name || '',
+                    cedula: user.cedula || '',
                     role: user.role
                 };
             }
