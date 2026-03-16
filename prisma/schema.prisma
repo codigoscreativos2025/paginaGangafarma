@@ -18,6 +18,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   cartItems     CartItem[]
   actionLogs    UserActionLog[]
+  orders        Order[]
+  conversations Conversation[]
 }
 
 model ProductOverride {
@@ -63,5 +65,42 @@ model Promotion {
 model Config {
   id                  String   @id @default("default")
   deliveryMinAmount   Float    @default(5.0)
+  webhookChatUrl      String?
+  aiEnabled           Boolean  @default(true)
   updatedAt           DateTime @updatedAt
+}
+
+model Order {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  items         String    // JSON array
+  total         Float
+  status        String    @default("pending") // pending, paid, processing, delivered, cancelled
+  deliveryType  String    // pickup, delivery
+  paymentMethod String?
+  deliveryAddress String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+  guestId       String?
+  messages      String    // JSON array
+  status        String    @default("ai") // ai, human, closed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  name        String
+  instructions String
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
 }

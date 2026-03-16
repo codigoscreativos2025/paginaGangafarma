@@ -3,11 +3,13 @@
 import SearchBar from "@/components/SearchBar";
 import { useCart } from "@/components/CartContext";
 import { useLoginModal } from "@/components/LoginModalContext";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 
 export default function Home() {
   const { openCart, items } = useCart();
   const { openModal } = useLoginModal();
+  const { data: session } = useSession();
   return (
     <div className="relative flex min-h-screen flex-col bg-slate-50 pb-28 md:pb-0">
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-2 border-primary/10">
@@ -164,14 +166,29 @@ export default function Home() {
               </span>
             )}
           </div>
-          <Link href="/dashboard/admin" className="flex flex-col items-center gap-1 text-slate-400">
-            <span className="material-symbols-outlined text-3xl">dashboard</span>
-            <span className="text-xs font-medium">Admin</span>
-          </Link>
-          <button onClick={openModal} className="flex flex-col items-center gap-1 text-slate-400">
-            <span className="material-symbols-outlined text-3xl">person</span>
-            <span className="text-xs font-medium">Perfil</span>
-          </button>
+          {session?.user?.role === 'ADMIN' && (
+            <Link href="/dashboard/admin" className="flex flex-col items-center gap-1 text-slate-400">
+              <span className="material-symbols-outlined text-3xl">dashboard</span>
+              <span className="text-xs font-medium">Admin</span>
+            </Link>
+          )}
+          {session?.user?.role === 'WORKER' && (
+            <Link href="/dashboard/worker" className="flex flex-col items-center gap-1 text-slate-400">
+              <span className="material-symbols-outlined text-3xl">support_agent</span>
+              <span className="text-xs font-medium">Chats</span>
+            </Link>
+          )}
+          {session ? (
+            <Link href="/dashboard/perfil" className="flex flex-col items-center gap-1 text-primary">
+              <span className="material-symbols-outlined text-3xl">person</span>
+              <span className="text-xs font-bold">Mi Perfil</span>
+            </Link>
+          ) : (
+            <button onClick={openModal} className="flex flex-col items-center gap-1 text-slate-400">
+              <span className="material-symbols-outlined text-3xl">person</span>
+              <span className="text-xs font-medium">Perfil</span>
+            </button>
+          )}
         </div>
       </nav>
     </div>

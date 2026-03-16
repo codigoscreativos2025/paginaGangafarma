@@ -5,6 +5,7 @@ import { Providers } from './providers';
 import { LoginModalProvider } from '@/components/LoginModalContext';
 import { CartProvider } from '@/components/CartContext';
 import { ReactNode } from 'react';
+import ChatWidget from '@/components/ChatWidget';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,6 +20,7 @@ export function CoreProviders({ children }: { children: ReactNode }) {
       <LoginModalProvider>
         <CartProvider>
           {children}
+          <ChatWidget />
         </CartProvider>
       </LoginModalProvider>
     </Providers>

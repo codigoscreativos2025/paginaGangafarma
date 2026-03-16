@@ -16,14 +16,24 @@ type CartItemType = {
 
 type DeliveryType = 'pickup' | 'delivery';
 
+type PaymentMethodType = {
+    id: string;
+    name: string;
+    instructions: string;
+    isActive: boolean;
+};
+
 type CartContextType = {
     items: CartItemType[];
     isCartOpen: boolean;
     deliveryType: DeliveryType;
     deliveryMinAmount: number;
+    paymentMethods: PaymentMethodType[];
+    selectedPaymentMethod: PaymentMethodType | null;
     openCart: () => void;
     closeCart: () => void;
     setDeliveryType: (type: DeliveryType) => void;
+    setSelectedPaymentMethod: (method: PaymentMethodType | null) => void;
     addToCart: (item: Omit<CartItemType, "id">) => void;
     removeFromCart: (codigo: string) => void;
     updateQuantity: (codigo: string, quantity: number) => void;
@@ -44,6 +54,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [deliveryType, setDeliveryType] = useState<DeliveryType>('pickup');
     const [deliveryMinAmount, setDeliveryMinAmount] = useState<number>(5.0);
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethodType[]>([]);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType | null>(null);
     const { status } = useSession();
     const { openModal } = useLoginModal();
 
@@ -53,6 +65,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
             .then(data => {
                 if (data.config?.deliveryMinAmount) {
                     setDeliveryMinAmount(data.config.deliveryMinAmount);
+                }
+            })
+            .catch(console.error);
+    }, []);
+
+    useEffect(() => {
+        fetch('/api/payment-methods')
+            .then(res => res.json())
+            .then(data => {
+                if (data.methods) {
+                    setPaymentMethods(data.methods.filter((m: PaymentMethodType) => m.isActive));
                 }
             })
             .catch(console.error);
@@ -151,9 +174,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             isCartOpen, 
             deliveryType, 
             deliveryMinAmount,
+            paymentMethods,
+            selectedPaymentMethod,
             openCart, 
             closeCart, 
             setDeliveryType,
+            setSelectedPaymentMethod,
             addToCart, 
             removeFromCart, 
             updateQuantity, 
@@ -167,8 +193,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 function CartDrawer() {
-    const { isCartOpen, closeCart, items, removeFromCart, updateQuantity, cartTotal, deliveryType, setDeliveryType, deliveryMinAmount, canProceedToCheckout } = useCart();
+    const { isCartOpen, closeCart, items, removeFromCart, updateQuantity, cartTotal, deliveryType, setDeliveryType, deliveryMinAmount, canProceedToCheckout, paymentMethods, selectedPaymentMethod, setSelectedPaymentMethod } = useCart();
     const [checkoutError, setCheckoutError] = useState('');
+    const [showPaymentInfo, setShowPaymentInfo] = useState(false);
 
     const handleCheckout = () => {
         const result = canProceedToCheckout();
@@ -176,8 +203,17 @@ function CartDrawer() {
             setCheckoutError(result.message);
             return;
         }
+        if (!selectedPaymentMethod) {
+            setCheckoutError('Selecciona un método de pago');
+            return;
+        }
         setCheckoutError('');
-        alert(`Procediendo al pago - ${deliveryType === 'delivery' ? 'Delivery' : 'Retiro en tienda'}`);
+        setShowPaymentInfo(true);
+    };
+
+    const confirmOrder = async () => {
+        alert(`Pedido confirmado!\nMétodo: ${selectedPaymentMethod?.name}\nTotal: $${cartTotal.toFixed(2)}\n\n${selectedPaymentMethod?.instructions}`);
+        setShowPaymentInfo(false);
     };
 
     return (
@@ -271,6 +307,28 @@ function CartDrawer() {
                             )}
                         </div>
 
+                        {paymentMethods.length > 0 && (
+                            <div className="bg-white rounded-xl p-4 border border-slate-200">
+                                <p className="text-sm font-bold text-slate-700 mb-3">Método de Pago</p>
+                                <div className="space-y-2">
+                                    {paymentMethods.map((method) => (
+                                        <button
+                                            key={method.id}
+                                            onClick={() => setSelectedPaymentMethod(method)}
+                                            className={`w-full py-3 px-4 rounded-lg font-medium text-sm flex items-center gap-2 transition-all ${
+                                                selectedPaymentMethod?.id === method.id
+                                                    ? 'bg-green-100 border-2 border-green-500 text-green-700'
+                                                    : 'bg-slate-100 border-2 border-transparent text-slate-600 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            <span className="material-symbols-outlined">payment</span>
+                                            {method.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {checkoutError && (
                             <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium text-center animate-shake">
                                 {checkoutError}
@@ -288,6 +346,44 @@ function CartDrawer() {
                             <span className="material-symbols-outlined text-sm">lock</span>
                             Proceder al Pago
                         </button>
+                    </div>
+                )}
+
+                {showPaymentInfo && selectedPaymentMethod && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-bold text-slate-900">Confirmar Pedido</h3>
+                                <button onClick={() => setShowPaymentInfo(false)} className="text-slate-400 hover:text-slate-600">
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div className="bg-slate-50 p-4 rounded-xl">
+                                    <p className="text-sm text-slate-500">Total a Pagar</p>
+                                    <p className="text-3xl font-black text-primary">${cartTotal.toFixed(2)}</p>
+                                </div>
+                                
+                                <div className="bg-slate-50 p-4 rounded-xl">
+                                    <p className="text-sm text-slate-500">Método de Pago</p>
+                                    <p className="font-bold text-slate-800">{selectedPaymentMethod.name}</p>
+                                </div>
+
+                                <div className="bg-green-50 border border-green-200 p-4 rounded-xl">
+                                    <p className="text-sm font-bold text-green-700 mb-2">Datos para el pago:</p>
+                                    <p className="text-sm text-green-800 whitespace-pre-line">{selectedPaymentMethod.instructions}</p>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={confirmOrder}
+                                className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                            >
+                                <span className="material-symbols-outlined">check_circle</span>
+                                Confirmar y Finalizar
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
