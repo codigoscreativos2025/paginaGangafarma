@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
     }
 
     try {
-        const { conversationId, status, message } = await request.json();
+        const { conversationId, status, message, aiEnabled } = await request.json();
 
         if (!conversationId) {
             return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
@@ -65,6 +65,13 @@ export async function PUT(request: Request) {
         }
 
         const existingMessages = JSON.parse(conversation.messages || '[]');
+
+        if (aiEnabled !== undefined) {
+            await prisma.conversation.update({
+                where: { id: conversationId },
+                data: { aiEnabled }
+            });
+        }
 
         if (status) {
             await prisma.conversation.update({

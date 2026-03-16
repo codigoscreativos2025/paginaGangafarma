@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import prisma from '@/lib/prisma';
 
 type ProductDetail = {
@@ -183,6 +184,42 @@ export default function AdminDashboard() {
         } finally {
             setLoadingAnalytics(false);
         }
+    };
+
+    const getChartData = () => {
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            last7Days.push(dateStr);
+        }
+
+        const actionsByDay = last7Days.map(date => {
+            const dayLogs = analyticsData.filter(log => 
+                new Date(log.timestamp).toISOString().split('T')[0] === date
+            );
+            return {
+                date: new Date(date).toLocaleDateString('es-VE', { weekday: 'short', day: 'numeric' }),
+                visitas: dayLogs.filter(l => l.actionType === 'VIEW_PRODUCT').length,
+                carrito: dayLogs.filter(l => l.actionType === 'ADD_TO_CART').length,
+                total: dayLogs.length
+            };
+        });
+
+        return last7Days.map((date, idx) => ({
+            ...actionsByDay[idx],
+            date
+        }));
+    };
+
+    const getActionStats = () => {
+        const totalVisitas = analyticsData.filter(l => l.actionType === 'VIEW_PRODUCT').length;
+        const totalCarrito = analyticsData.filter(l => l.actionType === 'ADD_TO_CART').length;
+        return [
+            { name: 'Visitas', value: totalVisitas, color: '#3b82f6' },
+            { name: 'Agregados al Carrito', value: totalCarrito, color: '#22c55e' }
+        ];
     };
 
     const loadUsers = async () => {
@@ -617,9 +654,114 @@ export default function AdminDashboard() {
                         </>
                     )}
 
+                    {activeTab === 'usuarios' && (
+                        <>
+                            <h1 className="text-3xl font-bold text-slate-800 mb-8">Gestión de Usuarios</h1>
+                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                                {loadingUsers ? (
+                                    <p className="p-8 text-slate-500 text-center animate-pulse">Cargando usuarios...</p>
+                                ) : (
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 border-b border-slate-200">
+                                                <th className="p-4 text-sm font-bold text-slate-600">Nombre</th>
+                                                <th className="p-4 text-sm font-bold text-slate-600">Cédula</th>
+                                                <th className="p-4 text-sm font-bold text-slate-600">Teléfono</th>
+                                                <th className="p-4 text-sm font-bold text-slate-600">Rol</th>
+                                                <th className="p-4 text-sm font-bold text-slate-600">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {usersData.map((user) => (
+                                                <tr key={user.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                                    <td className="p-4 font-medium">{user.name || 'Sin nombre'}</td>
+                                                    <td className="p-4 text-slate-600">{user.cedula || 'N/A'}</td>
+                                                    <td className="p-4 text-slate-600">{user.telefono || 'N/A'}</td>
+                                                    <td className="p-4">
+                                                        <span className={`px-2 py-1 rounded text-xs font-bold ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                            {user.role}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="flex gap-2">
+                                                            {user.role !== 'ADMIN' && (
+                                                                <button
+                                                                    onClick={() => handleUpdateUserRole(user.id, 'ADMIN')}
+                                                                    className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                                                                >
+                                                                    Hacer Admin
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => handleDeleteUser(user.id)}
+                                                                className="text-red-600 hover:text-red-700 text-sm font-medium"
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {usersData.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={5} className="p-8 text-center text-slate-500">No hay usuarios registrados.</td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </>
+                    )}
+
                     {activeTab === 'analiticas' && (
                         <>
                             <h1 className="text-3xl font-bold text-slate-800 mb-8">Analíticas Recientes</h1>
+                            
+                            {!loadingAnalytics && analyticsData.length > 0 && (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                        <h3 className="font-semibold text-slate-700 mb-4">Actividad por Día (Últimos 7 días)</h3>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <BarChart data={getChartData()}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                                <XAxis dataKey="date" tick={{fontSize: 12}} stroke="#64748b" />
+                                                <YAxis tick={{fontSize: 12}} stroke="#64748b" />
+                                                <Tooltip 
+                                                    contentStyle={{borderRadius: 8, border: '1px solid #e2e8f0'}}
+                                                    labelStyle={{fontWeight: 'bold'}}
+                                                />
+                                                <Bar dataKey="visitas" name="Visitas" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="carrito" name="Carrito" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                        <h3 className="font-semibold text-slate-700 mb-4">Distribución de Acciones</h3>
+                                        <ResponsiveContainer width="100%" height={250}>
+                                            <PieChart>
+                                                <Pie
+                                                    data={getActionStats()}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={60}
+                                                    outerRadius={90}
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                    label={({name, percent}) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                                                >
+                                                    {getActionStats().map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 {loadingAnalytics ? (
                                     <p className="p-8 text-slate-500 text-center animate-pulse">Cargando métricas de clientes...</p>

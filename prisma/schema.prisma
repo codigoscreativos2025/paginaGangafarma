@@ -92,6 +92,7 @@ model Conversation {
   guestId       String?
   messages      String    // JSON array
   status        String    @default("ai") // ai, human, closed
+  aiEnabled     Boolean   @default(true)  // AI toggle per conversation
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }

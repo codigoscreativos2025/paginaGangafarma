@@ -57,7 +57,9 @@ export async function POST(request: Request) {
 
         const config = await prisma.config.findUnique({ where: { id: 'default' } });
         
-        if (config?.webhookChatUrl && config?.aiEnabled) {
+        const conversationAIEnabled = conversation.aiEnabled ?? config?.aiEnabled ?? true;
+        
+        if (config?.webhookChatUrl && conversationAIEnabled) {
             try {
                 const webhookResponse = await fetch(config.webhookChatUrl, {
                     method: 'POST',
