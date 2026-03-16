@@ -50,9 +50,14 @@ export default function Home() {
               )}
             </button>
             {session ? (
-              <Link href="/dashboard/perfil" className="p-3 hover:bg-primary/10 rounded-full transition-colors text-primary">
-                <span className="material-symbols-outlined text-3xl">account_circle</span>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href="/chat" className="p-3 hover:bg-primary/10 rounded-full transition-colors text-primary" title="Chat con Remedina">
+                  <span className="material-symbols-outlined text-3xl">smart_toy</span>
+                </Link>
+                <Link href="/dashboard/perfil" className="p-3 hover:bg-primary/10 rounded-full transition-colors text-primary">
+                  <span className="material-symbols-outlined text-3xl">account_circle</span>
+                </Link>
+              </div>
             ) : (
               <button onClick={openModal} className="p-3 hover:bg-primary/10 rounded-full transition-colors">
                 <span className="material-symbols-outlined text-3xl">account_circle</span>
@@ -194,6 +199,12 @@ export default function Home() {
             <Link href="/dashboard/worker" className="flex flex-col items-center gap-1 text-slate-400">
               <span className="material-symbols-outlined text-3xl">support_agent</span>
               <span className="text-xs font-medium">Chats</span>
+            </Link>
+          )}
+          {session && (
+            <Link href="/chat" className="flex flex-col items-center gap-1 text-purple-600">
+              <span className="material-symbols-outlined text-3xl">smart_toy</span>
+              <span className="text-xs font-medium">Remedina</span>
             </Link>
           )}
           {session ? (

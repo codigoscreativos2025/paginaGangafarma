@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type Message = {
     role: 'user' | 'assistant' | 'system';
@@ -19,14 +19,29 @@ type Order = {
 };
 
 export default function ChatPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <span className="material-symbols-outlined text-6xl text-primary animate-spin">refresh</span>
+            </div>
+        }>
+            <ChatContent />
+        </Suspense>
+    );
+}
+
+function ChatContent() {
     const { data: session, status } = useSession();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const fromOrder = searchParams.get('fromOrder');
     const [conversations, setConversations] = useState<{id: string; updatedAt: string}[]>([]);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [orders, setOrders] = useState<Order[]>([]);
+    const [defaultMessageSent, setDefaultMessageSent] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -41,6 +56,19 @@ export default function ChatPage() {
             fetchOrders();
         }
     }, [session]);
+
+    useEffect(() => {
+        if (orders.length > 0 && fromOrder && !defaultMessageSent) {
+            const latestOrder = orders[0];
+            const autoMessage: Message = {
+                role: 'assistant',
+                content: `¡Gracias por tu compra! 🏥\n\nPor favor sube el comprobante de pago para verificar tu pedido #${latestOrder.id.slice(-8)}\n\nTotal: $${latestOrder.total.toFixed(2)}\n\nUna vez verificado, procesaremos tu pedido inmediatamente.`,
+                timestamp: new Date().toISOString()
+            };
+            setMessages([autoMessage]);
+            setDefaultMessageSent(true);
+        }
+    }, [orders, fromOrder, defaultMessageSent]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -147,15 +175,15 @@ export default function ChatPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex">
-            <aside className="w-80 bg-white border-r border-slate-200 flex flex-col">
+        <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+            <aside className="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col order-2 md:order-1">
                 <div className="p-4 border-b border-slate-200">
                     <button
                         onClick={startNewConversation}
                         className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary/90 flex items-center justify-center gap-2"
                     >
                         <span className="material-symbols-outlined">chat</span>
-                        Nueva Conversación
+                        <span className="md:hidden lg:inline">Nueva Conversación</span>
                     </button>
                 </div>
 
@@ -217,13 +245,13 @@ export default function ChatPage() {
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col">
+            <main className="flex-1 flex flex-col order-1 md:order-2">
                 <header className="bg-white border-b border-slate-200 p-4">
                     <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">smart_toy</span>
-                        Remedina - Asistente Virtual
+                        Remedina
                     </h1>
-                    <p className="text-sm text-slate-500">Puedo ayudarte con tus pedidos y consultas</p>
+                    <p className="text-sm text-slate-500 hidden md:block">Puedo ayudarte con tus pedidos y consultas</p>
                 </header>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">

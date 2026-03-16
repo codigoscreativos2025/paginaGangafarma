@@ -300,7 +300,11 @@ function CartDrawer() {
             alert(`Pedido confirmado!\nMétodo: ${selectedPaymentMethod?.name}\nTotal: $${cartTotal.toFixed(2)}\n\n${selectedPaymentMethod?.instructions}`);
             setShowPaymentInfo(false);
             closeCart();
-            router.push('/chat');
+            if (result.orderId) {
+                router.push(`/chat?fromOrder=${result.orderId}`);
+            } else {
+                router.push('/chat');
+            }
         } else {
             setCheckoutError(result.error || 'Error al confirmar pedido');
         }
