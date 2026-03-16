@@ -48,4 +48,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Ejecutar prisma db push antes de iniciar y sembrar el super administrador
-CMD ["/bin/sh", "-c", "node node_modules/prisma/build/index.js db push --accept-data-loss && node seed.js && node server.js"]
+CMD ["/bin/sh", "-c", "node ./node_modules/prisma/build/index.js db push && node seed.js && node server.js"]

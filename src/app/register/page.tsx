@@ -93,7 +93,7 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (telefono.trim().length < 10) {
+        if (telefono.trim().length < 2) {
             setFieldStates(prev => ({ ...prev, telefono: 'error' }));
             setTimeout(() => setFieldStates(prev => ({ ...prev, telefono: 'idle' })), 500);
             return;
@@ -236,13 +236,12 @@ export default function RegisterPage() {
                         <input
                             ref={cedulaInputRef}
                             type="text"
-                            inputMode="numeric"
                             required
                             className={getFieldClass('cedula')}
-                            placeholder="Ej: 12345678"
+                            placeholder="Ej: admin123456"
                             value={cedula}
                             onChange={(e) => {
-                                setCedula(e.target.value.replace(/\D/g, ''));
+                                setCedula(e.target.value);
                                 if (fieldStates.cedula === 'error') setFieldStates(prev => ({ ...prev, cedula: 'idle' }));
                             }}
                             onKeyDown={(e) => {
@@ -279,19 +278,18 @@ export default function RegisterPage() {
                         <label className={getLabelClass('telefono')}>Teléfono</label>
                         <input
                             ref={telefonoInputRef}
-                            type="tel"
-                            inputMode="tel"
+                            type="text"
                             required
                             className={getFieldClass('telefono')}
-                            placeholder="Ej: 04121234567"
+                            placeholder="Ej: admingangarma"
                             value={telefono}
                             onChange={(e) => {
-                                setTelefono(e.target.value.replace(/\D/g, ''));
+                                setTelefono(e.target.value);
                                 if (fieldStates.telefono === 'error') setFieldStates(prev => ({ ...prev, telefono: 'idle' }));
                             }}
                         />
                         <p className="text-xs text-slate-500 mt-2">
-                            Ingresa tu número de teléfono móvil (10+ dígitos)
+                            Ingresa tu teléfono de contacto
                         </p>
                         <div className="flex gap-3 mt-4">
                             <button

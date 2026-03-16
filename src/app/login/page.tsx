@@ -59,25 +59,23 @@ export default function LoginPage() {
                         <label className="block text-base font-bold text-slate-700 mb-2">Cédula de Identidad</label>
                         <input
                             type="text"
-                            inputMode="numeric"
                             required
                             className="w-full px-5 py-4 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg"
-                            placeholder="Ej: 12345678"
+                            placeholder="Ej: admin123456"
                             value={cedula}
-                            onChange={(e) => setCedula(e.target.value.replace(/\D/g, ''))}
+                            onChange={(e) => setCedula(e.target.value)}
                         />
                     </div>
 
                     <div>
                         <label className="block text-base font-bold text-slate-700 mb-2">Teléfono</label>
                         <input
-                            type="tel"
-                            inputMode="tel"
+                            type="text"
                             required
                             className="w-full px-5 py-4 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all text-lg"
-                            placeholder="Ej: 04121234567"
+                            placeholder="Ej: admingangarma"
                             value={telefono}
-                            onChange={(e) => setTelefono(e.target.value.replace(/\D/g, ''))}
+                            onChange={(e) => setTelefono(e.target.value)}
                         />
                     </div>
 

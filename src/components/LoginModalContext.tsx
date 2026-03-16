@@ -302,14 +302,13 @@ function LoginModal() {
                                 <input
                                     ref={cedulaInputRef}
                                     type="text"
-                                    inputMode="numeric"
                                     value={cedula}
                                     onChange={(e) => {
-                                        setCedula(e.target.value.replace(/\D/g, ''));
+                                        setCedula(e.target.value);
                                         if (fieldStates.cedula === 'error') setFieldStates(prev => ({ ...prev, cedula: 'idle' }));
                                     }}
                                     required
-                                    placeholder="Ej: 12345678"
+                                    placeholder="Ej: admin123456"
                                     className={getFieldClass('cedula')}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
@@ -376,14 +375,13 @@ function LoginModal() {
                                 <input
                                     ref={cedulaInputRef}
                                     type="text"
-                                    inputMode="numeric"
                                     value={cedula}
                                     onChange={(e) => {
-                                        setCedula(e.target.value.replace(/\D/g, ''));
+                                        setCedula(e.target.value);
                                         if (fieldStates.cedula === 'error') setFieldStates(prev => ({ ...prev, cedula: 'idle' }));
                                     }}
                                     required
-                                    placeholder="Ej: 12345678"
+                                    placeholder="Ej: admin123456"
                                     className={getFieldClass('cedula')}
                                 />
                             </div>
@@ -391,11 +389,10 @@ function LoginModal() {
                                 <label className={getLabelClass('telefono')}>Teléfono</label>
                                 <input
                                     ref={telefonoInputRef}
-                                    type="tel"
-                                    inputMode="tel"
+                                    type="text"
                                     value={telefono}
                                     onChange={(e) => {
-                                        setTelefono(e.target.value.replace(/\D/g, ''));
+                                        setTelefono(e.target.value);
                                         if (fieldStates.telefono === 'error') setFieldStates(prev => ({ ...prev, telefono: 'idle' }));
                                     }}
                                     required
