@@ -29,6 +29,18 @@ export default function Home() {
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            {session?.user?.role === 'ADMIN' && (
+              <Link href="/dashboard/admin" className="hidden md:flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
+                <span className="material-symbols-outlined text-xl">admin_panel_settings</span>
+                <span className="font-bold">Admin</span>
+              </Link>
+            )}
+            {session?.user?.role === 'WORKER' && (
+              <Link href="/dashboard/worker" className="hidden md:flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors">
+                <span className="material-symbols-outlined text-xl">support_agent</span>
+                <span className="font-bold">Chats</span>
+              </Link>
+            )}
             <button onClick={openCart} className="relative p-3 hover:bg-primary/10 rounded-full transition-colors">
               <span className="material-symbols-outlined text-3xl">shopping_cart</span>
               {items.length > 0 && (
@@ -37,9 +49,15 @@ export default function Home() {
                 </span>
               )}
             </button>
-            <button onClick={openModal} className="p-3 hover:bg-primary/10 rounded-full transition-colors">
-              <span className="material-symbols-outlined text-3xl">account_circle</span>
-            </button>
+            {session ? (
+              <Link href="/dashboard/perfil" className="p-3 hover:bg-primary/10 rounded-full transition-colors text-primary">
+                <span className="material-symbols-outlined text-3xl">account_circle</span>
+              </Link>
+            ) : (
+              <button onClick={openModal} className="p-3 hover:bg-primary/10 rounded-full transition-colors">
+                <span className="material-symbols-outlined text-3xl">account_circle</span>
+              </button>
+            )}
           </div>
         </div>
       </header>

@@ -131,15 +131,25 @@ export default function SearchBar() {
                                             setShowDropdown(false);
                                             router.push(`/producto/${item.codigo}`);
                                         }}
-                                        className="snap-start shrink-0 min-w-[260px] max-w-[280px] flex flex-col justify-between p-5 rounded-2xl bg-white border-2 border-slate-100 hover:border-primary hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
+                                        className="snap-start shrink-0 min-w-[260px] max-w-[280px] flex flex-col justify-between p-4 rounded-2xl bg-white border-2 border-slate-100 hover:border-primary hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
                                     >
-                                        <div className="flex flex-col mb-3">
-                                            <span className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-primary transition-colors text-lg" title={item.ddetallada}>{item.ddetallada}</span>
-                                            <span className="text-xs text-slate-400 mt-2 font-bold uppercase tracking-widest bg-slate-50 w-max px-2 py-1 rounded">Cód: {item.codigo}</span>
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-primary/30 rounded-xl flex items-center justify-center shrink-0">
+                                                <span className="material-symbols-outlined text-3xl text-primary">medication</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <span className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-primary transition-colors text-base" title={item.ddetallada}>{item.ddetallada}</span>
+                                                <span className="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest bg-slate-50 w-max px-2 py-0.5 rounded block">Cód: {item.codigo}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col items-start mt-auto">
-                                            <span className="font-black text-primary text-2xl">${parseFloat(item.precio_divisa || '0').toFixed(2)}</span>
-                                            <span className="text-sm font-semibold text-slate-400">Bs {parseFloat(item.precio_local || '0').toFixed(2)}</span>
+                                        <div className="flex items-end justify-between mt-auto pt-3 border-t border-slate-100">
+                                            <div>
+                                                <span className="font-black text-primary text-xl">${parseFloat(item.precio_divisa || '0').toFixed(2)}</span>
+                                                <span className="text-xs font-semibold text-slate-400 ml-2">Bs {parseFloat(item.precio_local || '0').toFixed(2)}</span>
+                                            </div>
+                                            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">
+                                                {item.stock_disponible} disp.
+                                            </span>
                                         </div>
                                     </div>
                                 ))}

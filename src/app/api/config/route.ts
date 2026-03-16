@@ -12,17 +12,17 @@ export async function GET() {
 
             if (!config) {
                 config = await prisma.config.create({
-                    data: { id: 'default', deliveryMinAmount: 5.0 }
+                    data: { id: 'default', deliveryMinAmount: 5.0, webhookChatUrl: '', aiEnabled: true }
                 });
             }
         } catch {
-            return NextResponse.json({ config: { deliveryMinAmount: 5.0 } });
+            return NextResponse.json({ config: { deliveryMinAmount: 5.0, webhookChatUrl: '', aiEnabled: true } });
         }
 
         return NextResponse.json({ config });
     } catch (error) {
         console.error('Error fetching config:', error);
-        return NextResponse.json({ config: { deliveryMinAmount: 5.0 } });
+        return NextResponse.json({ config: { deliveryMinAmount: 5.0, webhookChatUrl: '', aiEnabled: true } });
     }
 }
 
@@ -36,16 +36,21 @@ export async function PUT(request: Request) {
 
     try {
         const body = await request.json();
-        const { deliveryMinAmount } = body;
+        const { deliveryMinAmount, webhookChatUrl, aiEnabled } = body;
 
-        if (typeof deliveryMinAmount !== 'number' || deliveryMinAmount < 0) {
+        if (deliveryMinAmount !== undefined && (typeof deliveryMinAmount !== 'number' || deliveryMinAmount < 0)) {
             return NextResponse.json({ error: 'Monto inválido' }, { status: 400 });
         }
 
+        const updateData: { deliveryMinAmount?: number; webhookChatUrl?: string; aiEnabled?: boolean } = {};
+        if (deliveryMinAmount !== undefined) updateData.deliveryMinAmount = deliveryMinAmount;
+        if (webhookChatUrl !== undefined) updateData.webhookChatUrl = webhookChatUrl;
+        if (aiEnabled !== undefined) updateData.aiEnabled = aiEnabled;
+
         const config = await prisma.config.upsert({
             where: { id: 'default' },
-            update: { deliveryMinAmount },
-            create: { id: 'default', deliveryMinAmount }
+            update: updateData,
+            create: { id: 'default', deliveryMinAmount: deliveryMinAmount || 5.0, webhookChatUrl: webhookChatUrl || '', aiEnabled: aiEnabled !== undefined ? aiEnabled : true }
         });
 
         return NextResponse.json({ config });
