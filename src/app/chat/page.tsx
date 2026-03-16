@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 type Message = {
     role: 'user' | 'assistant' | 'system';
@@ -247,11 +248,16 @@ function ChatContent() {
 
             <main className="flex-1 flex flex-col order-1 md:order-2">
                 <header className="bg-white border-b border-slate-200 p-4">
-                    <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary">smart_toy</span>
-                        Remedina
-                    </h1>
-                    <p className="text-sm text-slate-500 hidden md:block">Puedo ayudarte con tus pedidos y consultas</p>
+                    <div className="flex items-center gap-3">
+                        <Link href="/" className="p-2 hover:bg-slate-100 rounded-lg">
+                            <span className="material-symbols-outlined">arrow_back</span>
+                        </Link>
+                        <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary">smart_toy</span>
+                            Remedina
+                        </h1>
+                    </div>
+                    <p className="text-sm text-slate-500 hidden md:block ml-12">Puedo ayudarte con tus pedidos y consultas</p>
                 </header>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -294,6 +300,44 @@ function ChatContent() {
 
                 <div className="p-4 bg-white border-t border-slate-200">
                     <div className="flex gap-2">
+                        <input
+                            type="file"
+                            id="payment-proof"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                
+                                const formData = new FormData();
+                                formData.append('image', file);
+                                
+                                try {
+                                    const res = await fetch('/api/upload', {
+                                        method: 'POST',
+                                        body: formData
+                                    });
+                                    const data = await res.json();
+                                    
+                                    if (data.url) {
+                                        const imageMessage: Message = {
+                                            role: 'user',
+                                            content: `📷 *Comprobante de pago subido:*\n${data.url}`,
+                                            timestamp: new Date().toISOString()
+                                        };
+                                        setMessages(prev => [...prev, imageMessage]);
+                                    }
+                                } catch (err) {
+                                    console.error('Error uploading:', err);
+                                }
+                            }}
+                        />
+                        <label
+                            htmlFor="payment-proof"
+                            className="p-3 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 cursor-pointer"
+                        >
+                            <span className="material-symbols-outlined">upload</span>
+                        </label>
                         <input
                             type="text"
                             value={input}

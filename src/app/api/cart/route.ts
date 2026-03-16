@@ -88,12 +88,31 @@ export async function POST(request: Request) {
             });
         }
 
+        // Get full item details
+        const [rows] = await db.execute<RowDataPacket[]>(
+            `SELECT a.codigoarticulo, a.ddetallada, a.pvreferencial1 as precio_divisa
+             FROM v_articulo a
+             WHERE a.codigoarticulo = ?`,
+            [codigo]
+        );
+
+        const dbInfo = (rows as { codigoarticulo: string, ddetallada: string, precio_divisa: number }[])[0];
+
         // Log Analytics
         await prisma.userActionLog.create({
             data: { userId: user.id, actionType: 'ADD_TO_CART', codigo }
         });
 
-        return NextResponse.json({ success: true, item });
+        return NextResponse.json({ 
+            success: true, 
+            item: {
+                id: item.id,
+                codigo: item.codigo,
+                quantity: item.quantity,
+                ddetallada: dbInfo?.ddetallada || 'Producto desconocido',
+                price: parseFloat(String(dbInfo?.precio_divisa || '0'))
+            }
+        });
     } catch {
         return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
     }

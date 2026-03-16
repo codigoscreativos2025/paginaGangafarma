@@ -193,15 +193,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ codigo: item.codigo, quantity: item.quantity })
             });
-            const data = await resp.json();
-            if (resp.ok && data.item) {
-                setItems(prev => {
-                    const existing = prev.find(i => i.codigo === item.codigo);
-                    if (existing) {
-                        return prev.map(i => i.codigo === item.codigo ? { ...i, quantity: i.quantity + item.quantity } : i);
-                    }
-                    return [...prev, { ...item, id: data.item.id }];
-                });
+            if (resp.ok) {
+                const cartRes = await fetch("/api/cart");
+                const cartData = await cartRes.json();
+                if (cartData.items) {
+                    setItems(cartData.items);
+                }
                 openCart();
             }
         } catch (error) {

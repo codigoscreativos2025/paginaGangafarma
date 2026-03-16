@@ -115,41 +115,35 @@ export default function SearchBar() {
             </div>
 
             {showDropdown && query.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-3 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-20">
-                    <div className="p-2">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-visible z-[100]">
+                    <div className="p-2 max-h-[500px] overflow-y-auto">
                         {loading ? (
                             <div className="p-6 text-center">
                                 <span className="material-symbols-outlined text-4xl text-primary animate-spin">refresh</span>
                                 <p className="mt-2 text-lg text-slate-500 font-medium">Buscando productos...</p>
                             </div>
                         ) : results.length > 0 ? (
-                            <div className="flex gap-4 overflow-x-auto p-4 snap-x hide-scroll-bar max-h-80">
-                                {results.slice(0, 6).map((item) => (
+                            <div className="flex flex-col gap-2 p-2">
+                                {results.slice(0, 10).map((item) => (
                                     <div
                                         key={item.codigo}
                                         onClick={() => {
                                             setShowDropdown(false);
                                             router.push(`/producto/${item.codigo}`);
                                         }}
-                                        className="snap-start shrink-0 min-w-[260px] max-w-[280px] flex flex-col justify-between p-4 rounded-2xl bg-white border-2 border-slate-100 hover:border-primary hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group"
+                                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-primary/5 cursor-pointer transition-colors"
                                     >
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-primary/30 rounded-xl flex items-center justify-center shrink-0">
-                                                <span className="material-symbols-outlined text-3xl text-primary">medication</span>
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <span className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-primary transition-colors text-base" title={item.ddetallada}>{item.ddetallada}</span>
-                                                <span className="text-xs text-slate-400 mt-1 font-bold uppercase tracking-widest bg-slate-50 w-max px-2 py-0.5 rounded block">Cód: {item.codigo}</span>
-                                            </div>
+                                        <div className="w-14 h-14 bg-gradient-to-br from-primary/10 to-primary/30 rounded-lg flex items-center justify-center shrink-0">
+                                            <span className="material-symbols-outlined text-2xl text-primary">medication</span>
                                         </div>
-                                        <div className="flex items-end justify-between mt-auto pt-3 border-t border-slate-100">
-                                            <div>
-                                                <span className="font-black text-primary text-xl">${parseFloat(item.precio_divisa || '0').toFixed(2)}</span>
-                                                <span className="text-xs font-semibold text-slate-400 ml-2">Bs {parseFloat(item.precio_local || '0').toFixed(2)}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <span className="font-bold text-slate-800 line-clamp-2 leading-tight text-sm" title={item.ddetallada}>{item.ddetallada}</span>
+                                            <div className="flex items-center justify-between mt-1">
+                                                <span className="font-black text-primary">${parseFloat(item.precio_divisa || '0').toFixed(2)}</span>
+                                                <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                                                    {item.stock_disponible}
+                                                </span>
                                             </div>
-                                            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">
-                                                {item.stock_disponible} disp.
-                                            </span>
                                         </div>
                                     </div>
                                 ))}

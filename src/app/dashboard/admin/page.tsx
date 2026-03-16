@@ -41,12 +41,14 @@ type UserInfoRow = {
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
 
-    const [activeTab, setActiveTab] = useState<'productos' | 'analiticas' | 'ofertas' | 'usuarios' | 'configuracion' | 'workers' | 'pagos'>('productos');
+    const [activeTab, setActiveTab] = useState<'productos' | 'analiticas' | 'ofertas' | 'usuarios' | 'configuracion' | 'workers' | 'pagos' | 'conversaciones'>('productos');
     const [codigo, setCodigo] = useState('');
     const [productData, setProductData] = useState<ProductDetail | null>(null);
 
     const [analyticsData, setAnalyticsData] = useState<AnalyticsLogInfo[]>([]);
     const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+    const [analyticsPage, setAnalyticsPage] = useState(1);
+    const analyticsPerPage = 10;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [usersData, setUsersData] = useState<UserInfoRow[]>([]);
@@ -79,6 +81,12 @@ export default function AdminDashboard() {
     // Config state
     const [webhookChatUrl, setWebhookChatUrl] = useState('');
     const [aiEnabled, setAiEnabled] = useState(true);
+    const [orderMessage, setOrderMessage] = useState('gracias por tu compra sube tu comprobante');
+
+    // Conversations state
+    const [conversationsData, setConversationsData] = useState<{id: string; userId: string | null; messages: string; status: string; updatedAt: string; user?: {name: string | null; cedula: string}}[]>([]);
+    const [loadingConversations, setLoadingConversations] = useState(false);
+    const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
 
     // Offers state
     const [offersData, setOffersData] = useState<{id: string; codigo: string; title: string; description: string; discount: number; active: boolean}[]>([]);
@@ -222,6 +230,24 @@ export default function AdminDashboard() {
         ];
     };
 
+    const getHourlyData = () => {
+        const hours = Array.from({ length: 24 }, (_, i) => i);
+        return hours.map(hour => {
+            const hourLogs = analyticsData.filter(log => new Date(log.timestamp).getHours() === hour);
+            return {
+                hour: `${hour.toString().padStart(2, '0')}:00`,
+                visitas: hourLogs.filter(l => l.actionType === 'VIEW_PRODUCT').length,
+                carrito: hourLogs.filter(l => l.actionType === 'ADD_TO_CART').length,
+                compras: hourLogs.filter(l => l.actionType === 'PURCHASE').length
+            };
+        });
+    };
+
+    const getPaginatedLogs = () => {
+        const start = (analyticsPage - 1) * analyticsPerPage;
+        return analyticsData.slice(start, start + analyticsPerPage);
+    };
+
     const loadUsers = async () => {
         setLoadingUsers(true);
         try {
@@ -251,10 +277,28 @@ export default function AdminDashboard() {
             if (data.config?.aiEnabled !== undefined) {
                 setAiEnabled(data.config.aiEnabled);
             }
+            if (data.config?.defaultOrderMessage) {
+                setOrderMessage(data.config.defaultOrderMessage);
+            }
         } catch (e) {
             console.error(e);
         } finally {
             setLoadingConfig(false);
+        }
+    };
+
+    const loadConversations = async () => {
+        setLoadingConversations(true);
+        try {
+            const res = await fetch('/api/admin/conversations');
+            const data = await res.json();
+            if (data.conversations) {
+                setConversationsData(data.conversations);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingConversations(false);
         }
     };
 
@@ -534,6 +578,10 @@ export default function AdminDashboard() {
                         <span className="material-symbols-outlined">settings</span>
                         Configuración
                     </button>
+                    <button onClick={() => { setActiveTab('conversaciones'); loadConversations(); }} className={`flex items-center gap-3 w-full text-left px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'conversaciones' ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'}`}>
+                        <span className="material-symbols-outlined">chat</span>
+                        Conversaciones
+                    </button>
                     <button onClick={() => setActiveTab('ofertas')} className={`flex items-center gap-3 w-full text-left px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'ofertas' ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'}`}>
                         <span className="material-symbols-outlined">campaign</span>
                         Promo y Ofertas
@@ -762,6 +810,26 @@ export default function AdminDashboard() {
                                 </div>
                             )}
 
+                            {!loadingAnalytics && analyticsData.length > 0 && (
+                                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+                                    <h3 className="font-semibold text-slate-700 mb-4">Afluencia por Hora del Día</h3>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={getHourlyData()}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                            <XAxis dataKey="hour" tick={{fontSize: 10}} stroke="#64748b" />
+                                            <YAxis tick={{fontSize: 12}} stroke="#64748b" />
+                                            <Tooltip 
+                                                contentStyle={{borderRadius: 8, border: '1px solid #e2e8f0'}}
+                                                labelStyle={{fontWeight: 'bold'}}
+                                            />
+                                            <Bar dataKey="visitas" name="Visitas" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+                                            <Bar dataKey="carrito" name="Al Carrito" fill="#22c55e" radius={[2, 2, 0, 0]} />
+                                            <Bar dataKey="compras" name="Compras" fill="#f59e0b" radius={[2, 2, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            )}
+
                             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                                 {loadingAnalytics ? (
                                     <p className="p-8 text-slate-500 text-center animate-pulse">Cargando métricas de clientes...</p>
@@ -776,7 +844,7 @@ export default function AdminDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {analyticsData.map((log) => (
+                                            {getPaginatedLogs().map((log) => (
                                                 <tr key={log.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                                     <td className="p-4">
                                                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${log.actionType === 'ADD_TO_CART' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
@@ -807,6 +875,46 @@ export default function AdminDashboard() {
                                     </table>
                                 )}
                             </div>
+
+                            {analyticsData.length > analyticsPerPage && (
+                                <div className="flex items-center justify-between p-4 bg-slate-50 border-t border-slate-200">
+                                    <p className="text-sm text-slate-500">
+                                        Mostrando {(analyticsPage - 1) * analyticsPerPage + 1} - {Math.min(analyticsPage * analyticsPerPage, analyticsData.length)} de {analyticsData.length}
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setAnalyticsPage(p => Math.max(1, p - 1))}
+                                            disabled={analyticsPage === 1}
+                                            className="px-3 py-1 rounded bg-white border border-slate-300 text-sm font-medium disabled:opacity-50 hover:bg-slate-50"
+                                        >
+                                            Anterior
+                                        </button>
+                                        {Array.from({ length: Math.ceil(analyticsData.length / analyticsPerPage) }, (_, i) => i + 1).slice(
+                                            Math.max(0, analyticsPage - 3),
+                                            Math.min(Math.ceil(analyticsData.length / analyticsPerPage), analyticsPage + 2)
+                                        ).map(page => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setAnalyticsPage(page)}
+                                                className={`px-3 py-1 rounded text-sm font-medium ${
+                                                    analyticsPage === page 
+                                                        ? 'bg-primary text-white' 
+                                                        : 'bg-white border border-slate-300 hover:bg-slate-50'
+                                                }`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setAnalyticsPage(p => Math.min(Math.ceil(analyticsData.length / analyticsPerPage), p + 1))}
+                                            disabled={analyticsPage >= Math.ceil(analyticsData.length / analyticsPerPage)}
+                                            className="px-3 py-1 rounded bg-white border border-slate-300 text-sm font-medium disabled:opacity-50 hover:bg-slate-50"
+                                        >
+                                            Siguiente
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
 
@@ -1171,6 +1279,49 @@ export default function AdminDashboard() {
                                         </button>
                                     </div>
 
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                                            Mensaje automático después de compra
+                                        </label>
+                                        <textarea
+                                            placeholder="Ej: ¡Gracias por tu compra! Sube el comprobante de pago..."
+                                            value={orderMessage}
+                                            onChange={(e) => setOrderMessage(e.target.value)}
+                                            rows={3}
+                                            className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary outline-none"
+                                        />
+                                        <p className="text-xs text-slate-500 mt-1">Mensaje que Remedina envía automáticamente cuando el cliente completa una compra</p>
+                                    </div>
+
+                                    <button
+                                        onClick={async () => {
+                                            setLoadingConfig(true);
+                                            try {
+                                                const res = await fetch('/api/config', {
+                                                    method: 'PUT',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ 
+                                                        deliveryMinAmount,
+                                                        webhookChatUrl,
+                                                        aiEnabled,
+                                                        defaultOrderMessage: orderMessage
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    setMsg({ text: 'Configuración guardada', type: 'success' });
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            } finally {
+                                                setLoadingConfig(false);
+                                            }
+                                        }}
+                                        disabled={loadingConfig}
+                                        className="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-purple-700 disabled:opacity-50"
+                                    >
+                                        Guardar Configuración de Chat
+                                    </button>
+
                                     <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl">
                                         <p className="font-bold text-purple-700 mb-2">📡 Endpoint para respuesta de n8n</p>
                                         <code className="block bg-white px-3 py-2 rounded text-sm text-slate-700 overflow-x-auto">
@@ -1188,6 +1339,95 @@ export default function AdminDashboard() {
                                     {msg.text}
                                 </p>
                             )}
+                        </>
+                    )}
+
+                    {activeTab === 'conversaciones' && (
+                        <>
+                            <h1 className="text-3xl font-bold text-slate-800 mb-8">Conversaciones de Clientes</h1>
+                            
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div className="lg:col-span-1 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                                    <h3 className="font-semibold text-slate-700 mb-4">Lista de Conversaciones</h3>
+                                    {loadingConversations ? (
+                                        <p className="text-slate-500 text-center py-4">Cargando...</p>
+                                    ) : conversationsData.length === 0 ? (
+                                        <p className="text-slate-500 text-center py-4">No hay conversaciones</p>
+                                    ) : (
+                                        <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                                            {conversationsData.map((conv) => (
+                                                <button
+                                                    key={conv.id}
+                                                    onClick={() => setSelectedConversation(conv.id)}
+                                                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                                                        selectedConversation === conv.id 
+                                                            ? 'bg-primary/10 border-primary' 
+                                                            : 'border-slate-200 hover:border-primary/50'
+                                                    }`}
+                                                >
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-medium text-slate-800 text-sm">
+                                                            {conv.user?.name || conv.user?.cedula || 'Usuario'}
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 rounded text-xs ${
+                                                            conv.status === 'ai' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
+                                                        }`}>
+                                                            {conv.status === 'ai' ? '🤖 IA' : '👤'}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-400 mt-1">
+                                                        {new Date(conv.updatedAt).toLocaleString()}
+                                                    </p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                                    <h3 className="font-semibold text-slate-700 mb-4">Detalles de Conversación</h3>
+                                    {selectedConversation ? (
+                                        (() => {
+                                            const conv = conversationsData.find(c => c.id === selectedConversation);
+                                            if (!conv) return null;
+                                            const messages = JSON.parse(conv.messages || '[]');
+                                            return (
+                                                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                                                    <div className="flex justify-between items-center pb-4 border-b">
+                                                        <div>
+                                                            <p className="font-bold text-slate-800">{conv.user?.name || 'Usuario'}</p>
+                                                            <p className="text-sm text-slate-500">Cédula: {conv.user?.cedula || 'N/A'}</p>
+                                                        </div>
+                                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                                            conv.status === 'ai' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
+                                                        }`}>
+                                                            {conv.status === 'ai' ? 'Asistido por IA' : 'Atendido por humano'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        {messages.map((msg: {role: string; content: string; timestamp: string}, idx: number) => (
+                                                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                                <div className={`max-w-[80%] p-3 rounded-xl ${
+                                                                    msg.role === 'user' 
+                                                                        ? 'bg-primary text-white' 
+                                                                        : 'bg-slate-100 text-slate-800'
+                                                                }`}>
+                                                                    <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                                                                    <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/70' : 'text-slate-400'}`}>
+                                                                        {new Date(msg.timestamp).toLocaleString()}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()
+                                    ) : (
+                                        <p className="text-slate-500 text-center py-8">Selecciona una conversación</p>
+                                    )}
+                                </div>
+                            </div>
                         </>
                     )}
                 </div>

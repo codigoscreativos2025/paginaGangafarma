@@ -370,7 +370,7 @@ export default function PerfilPage() {
                     )}
                 </section>
 
-                <section className="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
+                    <section className="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
                     <h2 className="text-xl font-bold text-slate-800 mb-6">Mis Pedidos</h2>
                     
                     {orders.length === 0 ? (
@@ -383,38 +383,64 @@ export default function PerfilPage() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {orders.map((order) => (
-                                <div key={order.id} className="border border-slate-200 rounded-xl p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div>
-                                            <p className="font-bold text-slate-800">Pedido #{order.id.slice(-8)}</p>
-                                            <p className="text-sm text-slate-500">
-                                                {new Date(order.createdAt).toLocaleDateString('es-VE', {
-                                                    day: 'numeric',
-                                                    month: 'long',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
+                            {orders.map((order) => {
+                                let itemsList: string[] = [];
+                                try {
+                                    itemsList = JSON.parse(order.items).map((i: { ddetallada?: string; codigo?: string }) => i.ddetallada || i.codigo || 'Producto');
+                                } catch {
+                                    itemsList = ['Producto'];
+                                }
+                                const displayItems = itemsList.slice(0, 3);
+                                const hasMore = itemsList.length > 3;
+                                
+                                return (
+                                    <div key={order.id} className="border border-slate-200 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div>
+                                                <p className="font-bold text-slate-800">Pedido #{order.id.slice(-8)}</p>
+                                                <p className="text-sm text-slate-500">
+                                                    {new Date(order.createdAt).toLocaleDateString('es-VE', {
+                                                        day: 'numeric',
+                                                        month: 'long',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </p>
+                                            </div>
+                                            <span className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(order.status)}`}>
+                                                {getStatusText(order.status)}
+                                            </span>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-bold ${getStatusColor(order.status)}`}>
-                                            {getStatusText(order.status)}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm text-slate-600">
-                                                {order.deliveryType === 'delivery' ? '📦 Delivery' : '🏪 Retiro en tienda'}
-                                            </p>
-                                            {order.paymentMethod && (
-                                                <p className="text-sm text-slate-500">Pago: {order.paymentMethod}</p>
-                                            )}
+                                        <div className="mb-3">
+                                            <p className="text-sm text-slate-600 font-medium">Productos:</p>
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {displayItems.map((item, idx) => (
+                                                    <span key={idx} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                                                        {item}
+                                                    </span>
+                                                ))}
+                                                {hasMore && (
+                                                    <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                                        +{itemsList.length - 3} más
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <p className="text-xl font-black text-primary">${order.total.toFixed(2)}</p>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm text-slate-600">
+                                                    {order.deliveryType === 'delivery' ? '📦 Delivery' : '🏪 Retiro en tienda'}
+                                                </p>
+                                                {order.paymentMethod && (
+                                                    <p className="text-sm text-slate-500">Pago: {order.paymentMethod}</p>
+                                                )}
+                                            </div>
+                                            <p className="text-xl font-black text-primary">${order.total.toFixed(2)}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </section>
