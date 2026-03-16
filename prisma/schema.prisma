@@ -11,11 +11,11 @@ generator client {
 model User {
   id            String    @id @default(cuid())
   name          String?
-  email         String?   @unique
-  password      String?
+  cedula        String    @unique
+  telefono      String?
   role          String    @default("USER")
   createdAt     DateTime  @default(now())
-  updatedAt     DateTime        @updatedAt
+  updatedAt     DateTime  @updatedAt
   cartItems     CartItem[]
   actionLogs    UserActionLog[]
 }
@@ -45,7 +45,7 @@ model UserActionLog {
   userId        String?
   user          User?     @relation(fields: [userId], references: [id])
   guestId       String?
-  actionType    String    // 'VIEW', 'ADD_TO_CART'
+  actionType    String
   codigo        String
   timestamp     DateTime  @default(now())
 }
@@ -58,4 +58,10 @@ model Promotion {
   discount      Float?
   active        Boolean   @default(true)
   createdAt     DateTime  @default(now())
+}
+
+model Config {
+  id                  String   @id @default("default")
+  deliveryMinAmount   Float    @default(5.0)
+  updatedAt           DateTime @updatedAt
 }

@@ -3,34 +3,41 @@ import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
     try {
-        const { name, email, password } = await request.json();
+        const { name, cedula, telefono } = await request.json();
 
-        if (!email || !password || !name) {
-            return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
+        if (!name || !cedula || !telefono) {
+            return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 });
+        }
+
+        const cedulaClean = String(cedula).trim();
+        const telefonoClean = String(telefono).trim();
+
+        if (cedulaClean.length < 5) {
+            return NextResponse.json({ error: 'Cédula inválida' }, { status: 400 });
+        }
+
+        if (telefonoClean.length < 10) {
+            return NextResponse.json({ error: 'Teléfono inválido' }, { status: 400 });
         }
 
         const existingUser = await prisma.user.findUnique({
-            where: { email }
+            where: { cedula: cedulaClean }
         });
 
         if (existingUser) {
-            return NextResponse.json({ error: 'El correo ya está registrado' }, { status: 400 });
+            return NextResponse.json({ error: 'Esta cédula ya está registrada' }, { status: 400 });
         }
-
-        // Identificar si es el primer usuario en el sistema. Si lo es, darle rol ADMIN
-        const count = await prisma.user.count();
-        const role = count === 0 ? 'ADMIN' : 'USER';
 
         const user = await prisma.user.create({
             data: {
-                name,
-                email,
-                password, // Reminder: en produccion real debe hashearse
-                role
+                name: name.trim(),
+                cedula: cedulaClean,
+                telefono: telefonoClean,
+                role: 'USER'
             }
         });
 
-        return NextResponse.json({ success: true, user: { id: user.id, email: user.email, role: user.role } });
+        return NextResponse.json({ success: true, user: { id: user.id, cedula: user.cedula, role: user.role } });
     } catch (error) {
         console.error('Error en registro:', error);
         return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });

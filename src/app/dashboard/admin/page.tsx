@@ -28,7 +28,8 @@ type AnalyticsLogInfo = {
 type UserInfoRow = {
     id: string;
     name: string | null;
-    email: string | null;
+    cedula: string;
+    telefono: string | null;
     role: string;
     cartItemCount: number;
     actionCount: number;
@@ -38,7 +39,7 @@ type UserInfoRow = {
 export default function AdminDashboard() {
     const { data: session, status } = useSession();
 
-    const [activeTab, setActiveTab] = useState<'productos' | 'analiticas' | 'ofertas' | 'usuarios'>('productos');
+    const [activeTab, setActiveTab] = useState<'productos' | 'analiticas' | 'ofertas' | 'usuarios' | 'configuracion'>('productos');
     const [codigo, setCodigo] = useState('');
     const [productData, setProductData] = useState<ProductDetail | null>(null);
 
@@ -55,6 +56,8 @@ export default function AdminDashboard() {
 
     const [loading, setLoading] = useState(false);
     const [msg, setMsg] = useState({ text: '', type: '' });
+    const [deliveryMinAmount, setDeliveryMinAmount] = useState<number>(5.0);
+    const [loadingConfig, setLoadingConfig] = useState(false);
 
     if (status === 'loading') return <p className="p-10 text-center">Cargando...</p>;
     if (!session || (session.user as { role: string }).role !== 'ADMIN') {
@@ -166,6 +169,42 @@ export default function AdminDashboard() {
         }
     };
 
+    const loadConfig = async () => {
+        setLoadingConfig(true);
+        try {
+            const res = await fetch('/api/config');
+            const data = await res.json();
+            if (data.config?.deliveryMinAmount) {
+                setDeliveryMinAmount(data.config.deliveryMinAmount);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingConfig(false);
+        }
+    };
+
+    const saveConfig = async () => {
+        setLoadingConfig(true);
+        try {
+            const res = await fetch('/api/config', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deliveryMinAmount })
+            });
+            if (res.ok) {
+                setMsg({ text: 'Configuración guardada exitosamente!', type: 'success' });
+            } else {
+                setMsg({ text: 'Error al guardar configuración', type: 'error' });
+            }
+        } catch {
+            setMsg({ text: 'Error al guardar configuración', type: 'error' });
+        } finally {
+            setLoadingConfig(false);
+            setTimeout(() => setMsg({ text: '', type: '' }), 3000);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
             <aside className="w-full md:w-64 bg-white border-r border-slate-200 p-6">
@@ -189,6 +228,10 @@ export default function AdminDashboard() {
                     <button onClick={() => setActiveTab('ofertas')} className={`flex items-center gap-3 w-full text-left px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'ofertas' ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'}`}>
                         <span className="material-symbols-outlined">campaign</span>
                         Promo y Ofertas
+                    </button>
+                    <button onClick={() => { setActiveTab('configuracion'); loadConfig(); }} className={`flex items-center gap-3 w-full text-left px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'configuracion' ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'}`}>
+                        <span className="material-symbols-outlined">settings</span>
+                        Configuración
                     </button>
                     <button onClick={() => signOut({ callbackUrl: '/' })} className="flex items-center gap-3 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg font-medium w-full text-left transition-colors">
                         <span className="material-symbols-outlined">logout</span>
@@ -364,6 +407,55 @@ export default function AdminDashboard() {
                         </>
                     )}
 
+                    {activeTab === 'configuracion' && (
+                        <>
+                            <h1 className="text-3xl font-bold text-slate-800 mb-8">Configuración</h1>
+                            
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+                                <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">local_shipping</span>
+                                    Configuración de Delivery
+                                </h3>
+                                <p className="text-sm text-slate-500 mb-4">
+                                    Define el monto mínimo requerido para que los clientes puedan optar por el servicio de delivery.
+                                </p>
+                                <div className="flex gap-4 items-end">
+                                    <div className="flex-1">
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">
+                                            Monto mínimo para delivery (USD)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            value={deliveryMinAmount}
+                                            onChange={(e) => setDeliveryMinAmount(parseFloat(e.target.value) || 0)}
+                                            className="w-full border border-slate-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary outline-none text-lg"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={saveConfig}
+                                        disabled={loadingConfig}
+                                        className="bg-primary text-white px-6 py-3 rounded-lg font-bold hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        <span className="material-symbols-outlined text-sm">save</span>
+                                        {loadingConfig ? 'Guardando...' : 'Guardar'}
+                                    </button>
+                                </div>
+                                {msg.text && activeTab === 'configuracion' && (
+                                    <p className={`mt-4 text-sm font-medium ${msg.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
+                                        {msg.text}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm">
+                                <p className="font-medium">💡 Información</p>
+                                <p className="mt-1">Los clientes que seleccionen &quot;Delivery&quot; deberán tener un monto total mayor o igual a este valor para poder proceder con la compra.</p>
+                            </div>
+                        </>
+                    )}
+
                     {activeTab === 'usuarios' && (
                         <>
                             <h1 className="text-3xl font-bold text-slate-800 mb-8">Gestión de Usuarios</h1>
@@ -394,7 +486,7 @@ export default function AdminDashboard() {
                                                                 <span className="font-semibold text-slate-800">{user.name || 'Sin nombre'}</span>
                                                             </div>
                                                         </td>
-                                                        <td className="p-4 text-sm text-slate-600">{user.email}</td>
+                                                        <td className="p-4 text-sm text-slate-600">{user.cedula}</td>
                                                         <td className="p-4">
                                                             <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'}`}>
                                                                 {user.role}

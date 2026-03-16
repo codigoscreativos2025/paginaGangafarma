@@ -6,8 +6,9 @@ export async function POST(request: Request) {
     try {
         const session = await auth();
         let userId = null;
-        if (session?.user?.email) {
-            const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+        const ced = (session?.user as { cedula?: string } | undefined)?.cedula;
+        if (ced) {
+            const user = await prisma.user.findUnique({ where: { cedula: ced } });
             userId = user?.id || null;
         }
 

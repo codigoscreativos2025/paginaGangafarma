@@ -39,8 +39,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 
-# Copiamos script autoseeder y dependencia faltante
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs ./node_modules/bcryptjs
+# Copiamos script autoseeder
 COPY --from=builder --chown=nextjs:nodejs /app/seed.js ./seed.js
 
 USER nextjs

@@ -7,7 +7,6 @@ import { useCart } from '@/components/CartContext';
 import { useLoginModal } from '@/components/LoginModalContext';
 
 type Product = {
-    id: number;
     codigo: string;
     ddetallada: string;
     stock_disponible: string;
@@ -37,7 +36,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                 setProduct(prod);
                 setLoading(false);
 
-                // Log view analytics
                 if (prod) {
                     fetch('/api/track', {
                         method: 'POST',
@@ -53,11 +51,25 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     }, [params.id]);
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Cargando producto...</div>;
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="flex flex-col items-center gap-3">
+                    <span className="material-symbols-outlined text-primary text-5xl animate-spin">refresh</span>
+                    <p className="text-lg font-medium text-slate-600">Cargando producto...</p>
+                </div>
+            </div>
+        );
     }
 
     if (!product) {
-        return <div className="min-h-screen flex items-center justify-center">Producto no encontrado</div>;
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-6 text-center">
+                <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">search_off</span>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Producto no encontrado</h2>
+                <p className="text-slate-500 mb-6">No pudimos encontrar este producto.</p>
+                <Link href="/" className="bg-primary text-white font-bold py-3 px-8 rounded-2xl">Volver al inicio</Link>
+            </div>
+        );
     }
 
     const stock = parseFloat(product.stock_disponible || '0');
@@ -65,76 +77,68 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
     const customImg = product.override?.imageUrl || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3';
 
     return (
-        <div className="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+        <div className="relative flex min-h-screen w-full flex-col bg-slate-50 pb-24 md:pb-0">
             {/* Navigation Bar */}
-            <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 bg-white px-4 md:px-10 py-3 sticky top-0 z-50">
-                <div className="flex items-center gap-8">
-                    <Link href="/" className="flex items-center gap-4 text-primary">
-                        <div className="size-6 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-3xl">medical_services</span>
-                        </div>
-                        <h2 className="text-slate-900 text-lg font-bold leading-tight tracking-[-0.015em]">GangaFarma</h2>
-                    </Link>
-                    <div className="hidden lg:flex items-center gap-9">
-                        <a className="text-slate-700 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Medicinas</a>
-                        <a className="text-slate-700 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Bienestar</a>
-                        <a className="text-slate-700 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Belleza</a>
-                        <a className="text-slate-700 text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Ofertas</a>
+            <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-primary/10 px-4 md:px-10 py-3">
+                <div className="flex items-center justify-between max-w-[1200px] mx-auto">
+                    <div className="flex items-center gap-4 md:gap-8">
+                        <Link href="/" className="flex items-center gap-2 text-primary">
+                            <div className="bg-primary text-white p-1.5 rounded-lg flex items-center justify-center">
+                                <span className="material-symbols-outlined text-2xl">medical_services</span>
+                            </div>
+                            <h2 className="text-lg md:text-xl font-bold tracking-tight">GangaFarma</h2>
+                        </Link>
                     </div>
-                </div>
-                <div className="flex flex-1 justify-end gap-4 md:gap-8">
-                    <div className="flex gap-2 relative">
-                        <button onClick={openCart} className="relative flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-all">
-                            <span className="material-symbols-outlined">shopping_cart</span>
+                    <div className="flex items-center gap-2">
+                        <button onClick={openCart} className="relative p-2.5 hover:bg-primary/10 rounded-full transition-colors">
+                            <span className="material-symbols-outlined text-2xl">shopping_cart</span>
                             {items.length > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                                <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center">
                                     {items.length}
                                 </span>
                             )}
                         </button>
-                        <button onClick={openModal} className="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-all">
-                            <span className="material-symbols-outlined">person</span>
+                        <button onClick={openModal} className="p-2.5 hover:bg-primary/10 rounded-full transition-colors">
+                            <span className="material-symbols-outlined text-2xl">account_circle</span>
                         </button>
                     </div>
                 </div>
             </header>
 
-            <main className="flex flex-1 justify-center py-6 md:py-10">
-                <div className="layout-content-container flex flex-col max-w-[1200px] flex-1 px-4 md:px-10">
-                    <nav className="flex flex-wrap gap-2 pb-6">
-                        <Link className="text-primary text-sm font-medium leading-normal hover:underline" href="/">Inicio</Link>
-                        <span className="text-primary/40 text-sm font-medium leading-normal">/</span>
-                        <span className="text-slate-500 text-sm font-medium leading-normal">Producto ({product.codigo})</span>
+            <main className="flex flex-1 justify-center py-4 md:py-10">
+                <div className="flex flex-col max-w-[1200px] flex-1 px-4 md:px-10">
+                    <nav className="flex flex-wrap gap-2 pb-4 md:pb-6">
+                        <Link className="text-primary text-sm font-medium hover:underline" href="/">Inicio</Link>
+                        <span className="text-primary/40 text-sm">/</span>
+                        <span className="text-slate-500 text-sm font-medium">Producto ({product.codigo})</span>
                     </nav>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
-                        <div className="space-y-4">
-                            <div className="aspect-square w-full bg-white rounded-xl overflow-hidden border border-primary/10 flex items-center justify-center relative">
-                                <Image className="object-cover p-2 rounded-xl" fill sizes="(max-width: 768px) 100vw, 50vw" alt={product.ddetallada} src={customImg} />
-                                {stock <= 0 && <div className="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">Agotado</div>}
-                            </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 items-start">
+                        {/* Image */}
+                        <div className="aspect-square w-full bg-white rounded-2xl overflow-hidden border border-primary/10 flex items-center justify-center relative shadow-sm">
+                            <Image className="object-cover p-2 rounded-2xl" fill sizes="(max-width: 768px) 100vw, 50vw" alt={product.ddetallada} src={customImg} />
+                            {stock <= 0 && <div className="absolute top-4 left-4 bg-red-600 text-white text-sm font-bold px-3 py-1.5 rounded-xl">Agotado</div>}
                         </div>
 
-                        <div className="flex flex-col gap-6">
+                        {/* Product Info */}
+                        <div className="flex flex-col gap-4 md:gap-6">
                             <div>
                                 <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-primary font-semibold text-xs uppercase tracking-wider">CÓDIGO: {product.codigo}</span>
+                                    <span className="text-primary font-semibold text-xs uppercase tracking-wider bg-primary/10 px-2 py-1 rounded">CÓDIGO: {product.codigo}</span>
                                 </div>
-                                <h1 className="text-slate-900 text-3xl md:text-4xl font-black leading-tight tracking-tight">{product.ddetallada}</h1>
+                                <h1 className="text-slate-900 text-2xl md:text-4xl font-black leading-tight tracking-tight">{product.ddetallada}</h1>
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <span className={`material-symbols-outlined ${stock > 0 ? 'text-primary' : 'text-red-500'}`}>{stock > 0 ? 'check_circle' : 'cancel'}</span>
-                                <span className={`${stock > 0 ? 'text-primary' : 'text-red-500'} font-bold text-sm`}>
+                                <span className={`material-symbols-outlined text-2xl ${stock > 0 ? 'text-primary' : 'text-red-500'}`}>{stock > 0 ? 'check_circle' : 'cancel'}</span>
+                                <span className={`${stock > 0 ? 'text-primary' : 'text-red-500'} font-bold text-base`}>
                                     {stock > 0 ? `En Stock (${stock} disp.)` : 'Sin Existencia'}
                                 </span>
                             </div>
 
-                            <div className="flex flex-wrap gap-4 p-4 bg-white rounded-xl border border-primary/10 shadow-sm">
-                                <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
-                                    <p className="text-slate-500 text-xs font-medium uppercase">Precio (Ref)</p>
-                                    <p className="text-primary tracking-tight text-3xl font-black">${priceUSD.toFixed(2)}</p>
-                                </div>
+                            <div className="p-5 bg-white rounded-2xl border border-primary/10 shadow-sm">
+                                <p className="text-slate-500 text-xs font-medium uppercase mb-1">Precio (Ref)</p>
+                                <p className="text-primary tracking-tight text-4xl md:text-3xl font-black">${priceUSD.toFixed(2)}</p>
                             </div>
 
                             <button
@@ -150,9 +154,9 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                                     setAdding(false);
                                 }}
                                 disabled={stock <= 0 || adding}
-                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-5 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/20 text-lg active:scale-[0.98]"
                             >
-                                <span className={adding ? "material-symbols-outlined animate-spin" : "material-symbols-outlined"}>
+                                <span className={adding ? "material-symbols-outlined animate-spin text-2xl" : "material-symbols-outlined text-2xl"}>
                                     {adding ? "refresh" : "add_shopping_cart"}
                                 </span>
                                 {adding ? "Añadiendo..." : "Añadir al Carrito"}
@@ -160,46 +164,66 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                         </div>
                     </div>
 
-                    <div className="mt-12 space-y-8">
-                        <div className="border-b border-primary/10 flex gap-8">
-                            <button className="pb-4 text-primary font-bold border-b-2 border-primary text-sm uppercase tracking-wider">Descripción</button>
+                    {/* Description */}
+                    <div className="mt-8 md:mt-12 space-y-6">
+                        <div className="border-b border-primary/10 pb-4">
+                            <button className="text-primary font-bold border-b-2 border-primary text-sm uppercase tracking-wider">Descripción</button>
+                        </div>
+                        <div className="bg-white p-5 md:p-8 rounded-2xl border border-primary/10">
+                            <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-3">Sobre este producto</h3>
+                            <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-base">
+                                {product.override?.description || "Sin descripción adicional. Consulte al farmacéutico."}
+                            </p>
                         </div>
 
-                        <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div className="md:col-span-2 space-y-4">
-                                <h3 className="text-xl font-bold text-slate-900">Sobre este medicamento / producto</h3>
-                                <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
-                                    {product.override?.description || "Sin descripción adicional. Consulte al farmacéutico."}
-                                </p>
-                            </div>
-                        </section>
-
                         {product.override?.howToUse && (
-                            <section className="pt-6 border-t border-primary/5">
-                                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <div className="bg-white p-5 md:p-8 rounded-2xl border border-primary/10">
+                                <h3 className="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary">schedule</span>
                                     Cómo usar
                                 </h3>
-                                <div className="bg-white p-6 rounded-xl border border-primary/10">
-                                    <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{product.override.howToUse}</p>
-                                </div>
-                            </section>
+                                <p className="text-slate-600 leading-relaxed whitespace-pre-wrap text-base">{product.override.howToUse}</p>
+                            </div>
                         )}
 
                         {product.override?.warnings && (
-                            <section className="pt-6 border-t border-primary/5">
-                                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2 text-red-600">
+                            <div className="bg-red-50 p-5 md:p-8 rounded-2xl border border-red-200">
+                                <h3 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
                                     <span className="material-symbols-outlined">warning</span>
-                                    Advertencias & Precauciones
+                                    Advertencias
                                 </h3>
-                                <div className="bg-red-50 p-6 rounded-xl border border-red-200">
-                                    <p className="text-sm text-red-700 whitespace-pre-wrap">{product.override.warnings}</p>
-                                </div>
-                            </section>
+                                <p className="text-sm text-red-700 whitespace-pre-wrap">{product.override.warnings}</p>
+                            </div>
                         )}
                     </div>
                 </div>
             </main>
+
+            {/* Mobile bottom bar with add to cart */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-4">
+                <div className="flex-1">
+                    <p className="text-xs text-slate-500">Precio</p>
+                    <p className="text-xl font-black text-primary">${priceUSD.toFixed(2)}</p>
+                </div>
+                <button
+                    onClick={async () => {
+                        setAdding(true);
+                        await addToCart({
+                            codigo: product.codigo,
+                            ddetallada: product.ddetallada,
+                            price: priceUSD,
+                            quantity: 1,
+                            image: customImg
+                        });
+                        setAdding(false);
+                    }}
+                    disabled={stock <= 0 || adding}
+                    className="bg-primary text-white font-bold py-4 px-8 rounded-2xl text-base flex items-center gap-2 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-primary/20"
+                >
+                    <span className="material-symbols-outlined">add_shopping_cart</span>
+                    {adding ? "..." : "Añadir"}
+                </button>
+            </div>
         </div>
     );
 }

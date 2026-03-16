@@ -3,13 +3,15 @@ import { db } from '@/lib/db';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q');
+    let query = searchParams.get('q');
 
     if (!query) {
         return NextResponse.json({ error: 'Falta el término de búsqueda' }, { status: 400 });
     }
 
-    const terms = query.trim().split(/\s+/);
+    query = query.trim().slice(0, 100);
+    
+    const terms = query.split(/\s+/).filter(t => t.length > 0);
     if (terms.length === 0) {
         return NextResponse.json({ results: [] });
     }

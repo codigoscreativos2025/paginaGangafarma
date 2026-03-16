@@ -19,9 +19,11 @@ export async function GET() {
             }
         });
 
-        const formattedUsers = users.map((user: {
-            id: string, name: string | null, email: string | null, role: string, createdAt: Date, cartItems: { id: string }[], actionLogs: { id: string }[]
-        }) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const formattedUsers = users.map((user: any) => ({
+            name: user.name,
+            cedula: user.cedula,
+            telefono: user.telefono,
             role: user.role,
             createdAt: user.createdAt,
             cartItemCount: user.cartItems.length,

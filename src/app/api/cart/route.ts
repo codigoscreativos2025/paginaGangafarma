@@ -6,12 +6,13 @@ import { RowDataPacket } from 'mysql2/promise';
 
 export async function GET() {
     const session = await auth();
-    if (!session?.user?.email) {
+    const ced = (session?.user as { cedula?: string } | undefined)?.cedula;
+    if (!ced) {
         return NextResponse.json({ items: [] });
     }
 
     try {
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+        const user = await prisma.user.findUnique({ where: { cedula: ced } });
         if (!user) return NextResponse.json({ items: [] });
 
         const cartItems = await prisma.cartItem.findMany({
@@ -23,12 +24,14 @@ export async function GET() {
         }
 
         // Fetch detailed info for each cart item from the external DB
-        const codigos = cartItems.map((i: { codigo: string }) => `'${i.codigo}'`).join(',');
+        const codigosList = cartItems.map((i: { codigo: string }) => i.codigo);
+        const placeholders = codigosList.map(() => '?').join(',');
         const [rows] = await db.execute<RowDataPacket[]>(
             `SELECT a.codigoarticulo, a.ddetallada, a.pvreferencial1 as precio_divisa
              FROM v_articulo a
-             WHERE a.codigoarticulo IN (${codigos})
-             GROUP BY a.codigoarticulo, a.ddetallada, a.pvreferencial1`
+             WHERE a.codigoarticulo IN (${placeholders})
+             GROUP BY a.codigoarticulo, a.ddetallada, a.pvreferencial1`,
+            codigosList
         );
 
         // Match with local overrides for images
@@ -59,10 +62,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
     const session = await auth();
-    if (!session?.user?.email) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    const ced2 = (session?.user as { cedula?: string } | undefined)?.cedula;
+    if (!ced2) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     try {
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+        const user = await prisma.user.findUnique({ where: { cedula: ced2 } });
         if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
         const body = await request.json();
@@ -97,10 +101,11 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
     const session = await auth();
-    if (!session?.user?.email) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    const ced3 = (session?.user as { cedula?: string } | undefined)?.cedula;
+    if (!ced3) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     try {
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+        const user = await prisma.user.findUnique({ where: { cedula: ced3 } });
         if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
         const body = await request.json();
@@ -125,10 +130,11 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     const session = await auth();
-    if (!session?.user?.email) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    const ced4 = (session?.user as { cedula?: string } | undefined)?.cedula;
+    if (!ced4) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
     try {
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+        const user = await prisma.user.findUnique({ where: { cedula: ced4 } });
         if (!user) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
 
         const { searchParams } = new URL(request.url);
