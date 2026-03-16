@@ -27,10 +27,10 @@ export async function GET() {
         const codigosList = cartItems.map((i: { codigo: string }) => i.codigo);
         const placeholders = codigosList.map(() => '?').join(',');
         const [rows] = await db.execute<RowDataPacket[]>(
-            `SELECT a.codigoarticulo, a.ddetallada, a.pvreferencial1 as precio_divisa
+            `SELECT a.codigo, a.codigoarticulo, a.ddetallada, a.pvreferencial1 as precio_divisa
              FROM v_articulo a
-             WHERE a.codigoarticulo IN (${placeholders})
-             GROUP BY a.codigoarticulo, a.ddetallada, a.pvreferencial1`,
+             WHERE a.codigo IN (${placeholders})
+             GROUP BY a.codigo, a.codigoarticulo, a.ddetallada, a.pvreferencial1`,
             codigosList
         );
 
@@ -40,7 +40,7 @@ export async function GET() {
         });
 
         const detailedItems = cartItems.map((item: { codigo: string, quantity: number, id: string }) => {
-            const dbInfo = (rows as { codigoarticulo: string, ddetallada: string, precio_divisa: number }[]).find((r) => r.codigoarticulo == item.codigo);
+            const dbInfo = (rows as { codigo: string, ddetallada: string, precio_divisa: number }[]).find((r) => r.codigo == item.codigo);
             const override = overrides.find((o: { codigo: string }) => o.codigo === item.codigo);
 
             return {
