@@ -122,12 +122,28 @@ export async function POST(request: Request) {
     }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const conversationId = searchParams.get('conversationId');
     const session = await auth();
     const ced = session?.user?.cedula;
     
     if (!ced) {
-        return NextResponse.json({ conversations: [] });
+        return NextResponse.json({ conversations: [], messages: [] });
+    }
+
+    if (conversationId) {
+        try {
+            const conversation = await prisma.conversation.findUnique({
+                where: { id: conversationId }
+            });
+            if (conversation) {
+                const messages = JSON.parse(conversation.messages || '[]');
+                return NextResponse.json({ messages });
+            }
+        } catch (e) {
+            console.error('Error loading conversation:', e);
+        }
     }
 
     try {

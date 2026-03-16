@@ -20,6 +20,7 @@ model User {
   actionLogs    UserActionLog[]
   orders        Order[]
   conversations Conversation[]
+  addresses     Address[]
 }
 
 model ProductOverride {
@@ -63,26 +64,56 @@ model Promotion {
 }
 
 model Config {
-  id                  String   @id @default("default")
-  deliveryMinAmount   Float    @default(5.0)
-  webhookChatUrl      String?
-  aiEnabled           Boolean  @default(true)
-  updatedAt           DateTime @updatedAt
+  id                    String   @id @default("default")
+  deliveryMinAmount     Float    @default(5.0)
+  webhookChatUrl        String?
+  aiEnabled             Boolean  @default(true)
+  defaultOrderMessage   String   @default("gracias por tu compra sube tu comprobante")
+  updatedAt             DateTime @updatedAt
 }
 
 model Order {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
-  items         String    // JSON array
-  total         Float
-  status        String    @default("pending") // pending, paid, processing, delivered, cancelled
-  deliveryType  String    // pickup, delivery
-  paymentMethod String?
-  deliveryAddress String?
-  notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               String      @id @default(cuid())
+  userId           String
+  user             User        @relation(fields: [userId], references: [id])
+  items            String      // JSON array
+  total            Float
+  statusId         String?
+  status           OrderStatus? @relation(fields: [statusId], references: [id])
+  deliveryType     String      // pickup, delivery
+  paymentMethod    String?
+  paymentProofUrl  String?
+  paymentStatus    String      @default("pending") // pending, verified, rejected
+  deliveryAddress  String?
+  addressId        String?
+  address          Address?    @relation(fields: [addressId], references: [id])
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model OrderStatus {
+  id          String   @id @default(cuid())
+  name        String
+  color       String   @default("#3b82f6") // blue by default
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  orders      Order[]
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  street      String
+  city        String
+  state       String
+  zip         String?
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  orders      Order[]
 }
 
 model Conversation {
@@ -93,8 +124,18 @@ model Conversation {
   messages      String    // JSON array
   status        String    @default("ai") // ai, human, closed
   aiEnabled     Boolean   @default(true)  // AI toggle per conversation
+  orderId       String?   // Link to order for purchase proof
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model OrderMessage {
+  id          String   @id @default(cuid())
+  orderId     String
+  type        String   // text, image, system
+  content     String
+  from        String   // user, worker, system
+  createdAt   DateTime @default(now())
 }
 
 model PaymentMethod {

@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLoginModal } from "./LoginModalContext";
 import Image from "next/image";
 
@@ -15,6 +17,15 @@ type CartItemType = {
 };
 
 type DeliveryType = 'pickup' | 'delivery';
+
+type AddressType = {
+    id: string;
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    isDefault: boolean;
+};
 
 type PaymentMethodType = {
     id: string;
@@ -30,15 +41,20 @@ type CartContextType = {
     deliveryMinAmount: number;
     paymentMethods: PaymentMethodType[];
     selectedPaymentMethod: PaymentMethodType | null;
+    addresses: AddressType[];
+    selectedAddressId: string | null;
     openCart: () => void;
     closeCart: () => void;
     setDeliveryType: (type: DeliveryType) => void;
     setSelectedPaymentMethod: (method: PaymentMethodType | null) => void;
+    setSelectedAddressId: (id: string | null) => void;
+    refreshAddresses: () => Promise<void>;
     addToCart: (item: Omit<CartItemType, "id">) => void;
     removeFromCart: (codigo: string) => void;
     updateQuantity: (codigo: string, quantity: number) => void;
     cartTotal: number;
     canProceedToCheckout: () => { allowed: boolean; message: string };
+    confirmOrder: () => Promise<{ success: boolean; orderId?: string; error?: string }>;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -56,8 +72,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const [deliveryMinAmount, setDeliveryMinAmount] = useState<number>(5.0);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethodType[]>([]);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethodType | null>(null);
+    const [addresses, setAddresses] = useState<AddressType[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
     const { status } = useSession();
     const { openModal } = useLoginModal();
+
+    const refreshAddresses = async () => {
+        try {
+            const res = await fetch('/api/profile');
+            const data = await res.json();
+            if (data.user?.addresses) {
+                setAddresses(data.user.addresses);
+                const defaultAddr = data.user.addresses.find((a: AddressType) => a.isDefault);
+                if (defaultAddr) setSelectedAddressId(defaultAddr.id);
+            }
+        } catch (e) {
+            console.error('Error fetching addresses:', e);
+        }
+    };
 
     useEffect(() => {
         fetch('/api/config')
@@ -91,10 +123,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
                     }
                 })
                 .catch(console.error);
+            refreshAddresses();
         } else {
             setItems([]);
+            setAddresses([]);
         }
     }, [status]);
+
+    const confirmOrder = async () => {
+        if (items.length === 0) {
+            return { success: false, error: 'Carrito vacío' };
+        }
+        if (!selectedPaymentMethod) {
+            return { success: false, error: 'Selecciona método de pago' };
+        }
+        if (deliveryType === 'delivery' && !selectedAddressId) {
+            return { success: false, error: 'Selecciona una dirección de entrega' };
+        }
+
+        try {
+            const res = await fetch('/api/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: items.map(i => ({ codigo: i.codigo, quantity: i.quantity, price: i.price, ddetallada: i.ddetallada })),
+                    total: cartTotal,
+                    deliveryType,
+                    paymentMethod: selectedPaymentMethod.name,
+                    addressId: deliveryType === 'delivery' ? selectedAddressId : null
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.order) {
+                setItems([]);
+                return { success: true, orderId: data.order.id };
+            }
+            return { success: false, error: data.error || 'Error al crear orden' };
+        } catch {
+            return { success: false, error: 'Error de conexión' };
+        }
+    };
 
     const openCart = () => setIsCartOpen(true);
     const closeCart = () => setIsCartOpen(false);
@@ -176,15 +245,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
             deliveryMinAmount,
             paymentMethods,
             selectedPaymentMethod,
+            addresses,
+            selectedAddressId,
             openCart, 
             closeCart, 
             setDeliveryType,
             setSelectedPaymentMethod,
+            setSelectedAddressId,
+            refreshAddresses,
             addToCart, 
             removeFromCart, 
             updateQuantity, 
             cartTotal,
-            canProceedToCheckout
+            canProceedToCheckout,
+            confirmOrder
         }}>
             {children}
             {isCartOpen && <CartDrawer />}
@@ -193,9 +267,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 }
 
 function CartDrawer() {
-    const { isCartOpen, closeCart, items, removeFromCart, updateQuantity, cartTotal, deliveryType, setDeliveryType, deliveryMinAmount, canProceedToCheckout, paymentMethods, selectedPaymentMethod, setSelectedPaymentMethod } = useCart();
+    const router = useRouter();
+    const { isCartOpen, closeCart, items, removeFromCart, updateQuantity, cartTotal, deliveryType, setDeliveryType, deliveryMinAmount, canProceedToCheckout, paymentMethods, selectedPaymentMethod, setSelectedPaymentMethod, addresses, selectedAddressId, setSelectedAddressId, confirmOrder } = useCart();
     const [checkoutError, setCheckoutError] = useState('');
     const [showPaymentInfo, setShowPaymentInfo] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleCheckout = () => {
         const result = canProceedToCheckout();
@@ -207,13 +283,27 @@ function CartDrawer() {
             setCheckoutError('Selecciona un método de pago');
             return;
         }
+        if (deliveryType === 'delivery' && (!addresses.length || !selectedAddressId)) {
+            setCheckoutError('Agrega una dirección de entrega en tu perfil');
+            return;
+        }
         setCheckoutError('');
         setShowPaymentInfo(true);
     };
 
-    const confirmOrder = async () => {
-        alert(`Pedido confirmado!\nMétodo: ${selectedPaymentMethod?.name}\nTotal: $${cartTotal.toFixed(2)}\n\n${selectedPaymentMethod?.instructions}`);
-        setShowPaymentInfo(false);
+    const handleConfirmOrder = async () => {
+        setIsSubmitting(true);
+        const result = await confirmOrder();
+        setIsSubmitting(false);
+        
+        if (result.success) {
+            alert(`Pedido confirmado!\nMétodo: ${selectedPaymentMethod?.name}\nTotal: $${cartTotal.toFixed(2)}\n\n${selectedPaymentMethod?.instructions}`);
+            setShowPaymentInfo(false);
+            closeCart();
+            router.push('/chat');
+        } else {
+            setCheckoutError(result.error || 'Error al confirmar pedido');
+        }
     };
 
     return (
@@ -300,10 +390,35 @@ function CartDrawer() {
                                 </button>
                             </div>
                             {deliveryType === 'delivery' && (
-                                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-amber-500">info</span>
-                                    Monto mínimo: ${deliveryMinAmount.toFixed(2)}
-                                </p>
+                                <>
+                                    <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-amber-500">info</span>
+                                        Monto mínimo: ${deliveryMinAmount.toFixed(2)}
+                                    </p>
+                                    {addresses.length > 0 ? (
+                                        <div className="mt-3 space-y-2">
+                                            <p className="text-xs font-medium text-slate-600">Selecciona dirección de entrega:</p>
+                                            {addresses.map((addr) => (
+                                                <button
+                                                    key={addr.id}
+                                                    onClick={() => setSelectedAddressId(addr.id)}
+                                                    className={`w-full text-left p-3 rounded-lg border-2 text-sm transition-all ${
+                                                        selectedAddressId === addr.id
+                                                            ? 'border-blue-500 bg-blue-50'
+                                                            : 'border-slate-200 hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    <p className="font-medium text-slate-800">{addr.street}</p>
+                                                    <p className="text-xs text-slate-500">{addr.city}, {addr.state}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <Link href="/dashboard/perfil" className="mt-3 block text-sm text-primary hover:underline">
+                                            Agregar dirección en mi perfil
+                                        </Link>
+                                    )}
+                                </>
                             )}
                         </div>
 
@@ -377,11 +492,12 @@ function CartDrawer() {
                             </div>
 
                             <button 
-                                onClick={confirmOrder}
-                                className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2"
+                                onClick={handleConfirmOrder}
+                                disabled={isSubmitting}
+                                className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 <span className="material-symbols-outlined">check_circle</span>
-                                Confirmar y Finalizar
+                                {isSubmitting ? 'Confirmando...' : 'Confirmar y Finalizar'}
                             </button>
                         </div>
                     </div>

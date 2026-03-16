@@ -9,10 +9,19 @@ type Order = {
     id: string;
     items: string;
     total: number;
-    status: string;
+    status: { name: string; color: string } | null;
     deliveryType: string;
     paymentMethod: string | null;
     createdAt: string;
+};
+
+type Address = {
+    id: string;
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    isDefault: boolean;
 };
 
 type UserData = {
@@ -22,6 +31,7 @@ type UserData = {
     telefono: string | null;
     role: string;
     createdAt: string;
+    addresses: Address[];
 };
 
 export default function PerfilPage() {
@@ -36,6 +46,10 @@ export default function PerfilPage() {
     const [telefono, setTelefono] = useState('');
     const [saving, setSaving] = useState(false);
     const [msg, setMsg] = useState({ type: '', text: '' });
+    
+    const [showAddressForm, setShowAddressForm] = useState(false);
+    const [newAddress, setNewAddress] = useState({ street: '', city: '', state: '', zip: '', isDefault: false });
+    const [savingAddress, setSavingAddress] = useState(false);
 
     useEffect(() => {
         if (status === 'unauthenticated') {
@@ -51,13 +65,20 @@ export default function PerfilPage() {
 
     const fetchProfile = async () => {
         try {
-            const res = await fetch('/api/profile');
-            const data = await res.json();
-            if (res.ok) {
-                setUserData(data.user);
-                setOrders(data.orders || []);
-                setName(data.user.name || '');
-                setTelefono(data.user.telefono || '');
+            const [profileRes, ordersRes] = await Promise.all([
+                fetch('/api/profile'),
+                fetch('/api/order')
+            ]);
+            const profileData = await profileRes.json();
+            const ordersData = await ordersRes.json();
+            
+            if (profileData.user) {
+                setUserData(profileData.user);
+                setName(profileData.user.name || '');
+                setTelefono(profileData.user.telefono || '');
+            }
+            if (ordersData.orders) {
+                setOrders(ordersData.orders);
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -91,26 +112,51 @@ export default function PerfilPage() {
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-700';
-            case 'paid': return 'bg-blue-100 text-blue-700';
-            case 'processing': return 'bg-purple-100 text-purple-700';
-            case 'delivered': return 'bg-green-100 text-green-700';
-            case 'cancelled': return 'bg-red-100 text-red-700';
-            default: return 'bg-slate-100 text-slate-700';
+    const handleAddAddress = async () => {
+        if (!newAddress.street || !newAddress.city || !newAddress.state) {
+            setMsg({ type: 'error', text: 'Completa los campos requeridos' });
+            return;
+        }
+        setSavingAddress(true);
+        try {
+            const res = await fetch('/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newAddress)
+            });
+            if (res.ok) {
+                setMsg({ type: 'success', text: 'Dirección agregada' });
+                setShowAddressForm(false);
+                setNewAddress({ street: '', city: '', state: '', zip: '', isDefault: false });
+                fetchProfile();
+            } else {
+                setMsg({ type: 'error', text: 'Error al agregar dirección' });
+            }
+        } catch {
+            setMsg({ type: 'error', text: 'Error al agregar dirección' });
+        } finally {
+            setSavingAddress(false);
         }
     };
 
-    const getStatusText = (status: string) => {
-        switch (status) {
-            case 'pending': return 'Pendiente';
-            case 'paid': return 'Pagado';
-            case 'processing': return 'Procesando';
-            case 'delivered': return 'Entregado';
-            case 'cancelled': return 'Cancelado';
-            default: return status;
+    const handleDeleteAddress = async (id: string) => {
+        if (!confirm('¿Eliminar esta dirección?')) return;
+        try {
+            await fetch(`/api/profile?id=${id}`, { method: 'DELETE' });
+            fetchProfile();
+        } catch (e) {
+            console.error(e);
         }
+    };
+
+    const getStatusColor = (status: { name: string; color: string } | null) => {
+        if (!status) return 'bg-gray-100 text-gray-700';
+        return { backgroundColor: status.color };
+    };
+
+    const getStatusText = (status: { name: string } | null) => {
+        if (!status) return 'Sin estado';
+        return status.name;
     };
 
     if (status === 'loading' || loading) {
@@ -225,6 +271,103 @@ export default function PerfilPage() {
                             </div>
                         )}
                     </div>
+                </section>
+
+                <section className="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-slate-800">Mis Direcciones</h2>
+                        <button
+                            onClick={() => setShowAddressForm(!showAddressForm)}
+                            className="text-primary font-medium flex items-center gap-1 hover:underline"
+                        >
+                            <span className="material-symbols-outlined">add</span>
+                            Agregar
+                        </button>
+                    </div>
+
+                    {showAddressForm && (
+                        <div className="bg-slate-50 p-4 rounded-xl mb-4 space-y-3">
+                            <input
+                                type="text"
+                                placeholder="Dirección (calle, número, edificio)"
+                                value={newAddress.street}
+                                onChange={(e) => setNewAddress({...newAddress, street: e.target.value})}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg"
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Ciudad"
+                                    value={newAddress.city}
+                                    onChange={(e) => setNewAddress({...newAddress, city: e.target.value})}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg"
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Estado"
+                                    value={newAddress.state}
+                                    onChange={(e) => setNewAddress({...newAddress, state: e.target.value})}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg"
+                                />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Código postal (opcional)"
+                                value={newAddress.zip}
+                                onChange={(e) => setNewAddress({...newAddress, zip: e.target.value})}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg"
+                            />
+                            <label className="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    checked={newAddress.isDefault}
+                                    onChange={(e) => setNewAddress({...newAddress, isDefault: e.target.checked})}
+                                />
+                                <span className="text-sm text-slate-600">Dirección principal</span>
+                            </label>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setShowAddressForm(false)}
+                                    className="flex-1 py-2 border border-slate-200 rounded-lg font-medium text-slate-600"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleAddAddress}
+                                    disabled={savingAddress}
+                                    className="flex-1 bg-primary text-white py-2 rounded-lg font-bold hover:bg-primary/90 disabled:opacity-50"
+                                >
+                                    {savingAddress ? 'Guardando...' : 'Guardar'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {userData?.addresses && userData.addresses.length > 0 ? (
+                        <div className="space-y-3">
+                            {userData.addresses.map((addr) => (
+                                <div key={addr.id} className="border border-slate-200 rounded-xl p-4 flex justify-between items-start">
+                                    <div>
+                                        <p className="font-medium text-slate-800">{addr.street}</p>
+                                        <p className="text-sm text-slate-500">{addr.city}, {addr.state} {addr.zip}</p>
+                                        {addr.isDefault && (
+                                            <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                                                Principal
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteAddress(addr.id)}
+                                        className="text-red-500 hover:text-red-700"
+                                    >
+                                        <span className="material-symbols-outlined">delete</span>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-slate-500 text-center py-4">No hay direcciones guardadas</p>
+                    )}
                 </section>
 
                 <section className="bg-white rounded-2xl shadow-md border border-slate-100 p-6">
